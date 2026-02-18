@@ -1,0 +1,30 @@
+/*
+Theme Name: Inscricao Enfrute
+Theme URI: https://github.com/guisfons/enfrute-inscricao
+Description: Tema personalizado para o evento Enfrute, focado em alta performance e design moderno inspirado no site oficial.
+Author: Guilherme Silva Fonseca
+Version: 1.0.0
+Text Domain: inscricao-enfrute
+*/
+
+:root {
+    --primary-green: #3CAC34;
+    --primary-dark: #333333;
+    --background-white: #FFFFFF;
+    --text-grey: #666666;
+    --font-heading: 'Montserrat', sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--primary-dark);
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-white);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+}

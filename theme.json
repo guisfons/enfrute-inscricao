@@ -1,0 +1,28 @@
+{
+    "version": 2,
+    "settings": {
+        "color": {
+            "palette": [
+                {
+                    "slug": "primary-green",
+                    "color": "#3CAC34",
+                    "name": "Verde Enfrute"
+                },
+                {
+                    "slug": "primary-dark",
+                    "color": "#333333",
+                    "name": "Escuro"
+                }
+            ]
+        },
+        "typography": {
+            "fontFamilies": [
+                {
+                    "fontFamily": "Montserrat, sans-serif",
+                    "slug": "montserrat",
+                    "name": "Montserrat"
+                }
+            ]
+        }
+    }
+}
