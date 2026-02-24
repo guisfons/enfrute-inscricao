@@ -24,5 +24,16 @@
                 }
             ]
         }
-    }
+    },
+    "customTemplates": [
+        {
+            "name": "page-templates/template-submission",
+            "title": "Submissão de Artigo",
+            "postTypes": [
+                "page"
+            ]
+        }
+    ]
+
 }
+

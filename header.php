@@ -13,17 +13,9 @@
     <header id="masthead" class="site-header">
         <div class="container sticky-header">
             <div class="site-branding">
-                <?php
-                if (has_custom_logo()) {
-                    the_custom_logo();
-                } else {
-                    ?>
-                    <h1 class="site-title"><a href="<?php echo esc_url(home_url('/')); ?>" rel="home">
-                            <?php bloginfo('name'); ?>
-                        </a></h1>
-                    <?php
-                }
-                ?>
+                <a href="<?php echo home_url(); ?>">
+                    <img src="<?php echo get_template_directory_uri(); ?>/assets/images/logo.webp" alt="Logo">
+                </a>
             </div>
 
             <nav id="site-navigation" class="main-navigation">
