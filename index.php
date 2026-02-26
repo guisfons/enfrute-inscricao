@@ -11,7 +11,12 @@ get_header(); ?>
             <h1>XIX ENFRUTE</h1>
             <p>XIX Encontro Nacional sobre Fruticultura de Clima Temperado. Junte-se a nós para o principal evento do
                 setor.</p>
-            <a href="#inscricao" class="btn-light">INSCREVA-SE AGORA</a>
+            <?php
+            $product = enfrute_get_registration_product();
+            if ($product):
+                ?>
+                <a href="<?php echo esc_url($product->add_to_cart_url()); ?>" class="btn-light">INSCREVA-SE AGORA</a>
+            <?php endif; ?>
         </div>
     </section>
 

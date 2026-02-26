@@ -9,15 +9,7 @@ if (!defined('ABSPATH')) {
 
 get_header();
 
-// Fetch settings
-$settings = get_option('sciflow_settings', array());
-$product_ids = explode(',', $settings['woo_product_ids'] ?? '');
-$product_id = !empty($product_ids) ? absint($product_ids[0]) : 0;
-
-$product = false;
-if ($product_id && function_exists('wc_get_product')) {
-    $product = wc_get_product($product_id);
-}
+$product = enfrute_get_registration_product();
 
 ?>
 
@@ -99,7 +91,7 @@ if ($product_id && function_exists('wc_get_product')) {
                         </div>
 
                         <div class="action-buttons d-grid d-md-flex gap-3">
-                            <a href="/carrinho<?php echo esc_url($product->add_to_cart_url()); ?>"
+                            <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
                                 class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm transition-up">
                                 <i class="bi bi-cart-plus me-2"></i> Inscrever-se Agora
                             </a>

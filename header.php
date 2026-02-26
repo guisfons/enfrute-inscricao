@@ -24,8 +24,12 @@
                     'theme_location' => 'primary',
                     'menu_id' => 'primary-menu',
                 ));
-                ?>
-                <a href="#inscricao" class="btn-primary">INSCREVA-SE</a>
+
+                $product = enfrute_get_registration_product();
+                if ($product):
+                    ?>
+                    <a href="<?php echo esc_url($product->add_to_cart_url()); ?>" class="btn-primary">INSCREVA-SE</a>
+                <?php endif; ?>
             </nav>
         </div>
     </header>

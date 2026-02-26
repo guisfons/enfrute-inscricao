@@ -96,8 +96,8 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                         <a href="<?php echo esc_url(home_url('/reviewer-dashboard')); ?>"
                             class="text-decoration-none text-success fw-bold">Minhas Revisões</a>
                     <?php elseif ($is_senco_role || $is_enfrute_role): ?>
-                        <a href="<?php echo esc_url(home_url('/artigos-publicados')); ?>"
-                            class="text-decoration-none text-success fw-bold">Artigos Publicados</a>
+                        <a href="<?php echo esc_url(home_url('/meus-artigos')); ?>"
+                            class="text-decoration-none text-success fw-bold">Meus Artigos</a>
                     <?php else: ?>
                         <a href="<?php echo esc_url(home_url('/meus-trabalhos')); ?>"
                             class="text-decoration-none text-success fw-bold">Meus Trabalhos</a>

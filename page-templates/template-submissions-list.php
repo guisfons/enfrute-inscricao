@@ -17,14 +17,7 @@ $args = array(
     'post_type' => array('enfrute_trabalhos', 'senco_trabalhos'),
     'author' => $user_id,
     'posts_per_page' => -1,
-    'post_status' => array('publish', 'draft', 'pending', 'future'),
-    'meta_query' => array(
-        array(
-            'key' => '_sciflow_status',
-            'value' => array('submetido', 'em_avaliacao', 'aguardando_decisao'),
-            'compare' => 'NOT IN',
-        ),
-    ),
+    'post_status' => 'any',
 );
 
 $query = new WP_Query($args);
