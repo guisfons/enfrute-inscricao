@@ -14,13 +14,34 @@ if (!$user_id) {
 }
 
 $args = array(
-    'post_type' => array('enfrute_trabalhos', 'senco_trabalhos'),
+    'post_type' => array('enfrute_trabalhos', 'semco_trabalhos'),
     'author' => $user_id,
     'posts_per_page' => -1,
     'post_status' => 'any',
 );
 
 $query = new WP_Query($args);
+
+// Calculate global order of submission for IDs
+$all_enfrute = get_posts(array(
+    'post_type' => 'enfrute_trabalhos',
+    'posts_per_page' => -1,
+    'post_status' => 'any',
+    'orderby' => 'date',
+    'order' => 'ASC',
+    'fields' => 'ids',
+));
+$enfrute_numbers = array_flip($all_enfrute);
+
+$all_semco = get_posts(array(
+    'post_type' => 'semco_trabalhos',
+    'posts_per_page' => -1,
+    'post_status' => 'any',
+    'orderby' => 'date',
+    'order' => 'ASC',
+    'fields' => 'ids',
+));
+$semco_numbers = array_flip($all_semco);
 ?>
 
 <main class="sciflow-submissions-list py-5">
@@ -53,7 +74,7 @@ $query = new WP_Query($args);
                                 $query->the_post();
                                 $post_id = get_the_ID();
                                 $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-                                $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Senco';
+                                $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
                                 $post_status = get_post_status();
                                 $date = get_the_date('d/m/Y');
 
@@ -65,10 +86,11 @@ $query = new WP_Query($args);
                                     'submetido' => 'Submetido',
                                     'em_avaliacao' => 'Em Avaliação',
                                     'aguardando_decisao' => 'Aguardando Decisão',
-                                    'em_correcao' => 'Correções Solicitadas',
+                                    'em_correcao' => 'Alterações Solicitadas',
                                     'aprovado' => 'Aprovado',
                                     'reprovado' => 'Reprovado',
-                                    'aprovado_com_consideracoes' => 'Aprovado com Considerações',
+                                    'aprovado_com_consideracoes' => 'Necessita Alterações',
+                                    'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
                                     'poster_enviado' => 'Pôster Enviado',
                                     'confirmado' => 'Confirmado',
                                 );
@@ -83,6 +105,7 @@ $query = new WP_Query($args);
                                     'aprovado' => 'sciflow-badge--published',
                                     'reprovado' => 'bg-danger text-white',
                                     'aprovado_com_consideracoes' => 'bg-info text-white',
+                                    'submetido_com_revisao' => 'bg-info text-white',
                                 );
 
                                 $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
@@ -90,7 +113,16 @@ $query = new WP_Query($args);
                                 ?>
                                 <tr>
                                     <td class="ps-4">
-                                        <span class="text-muted small">#<?php echo esc_html($post_id); ?></span>
+                                        <span class="text-muted small">#<?php
+                                        $event_type_slug = get_post_type($post_id);
+                                        $number = $post_id;
+                                        if ($event_type_slug === 'enfrute_trabalhos' && isset($enfrute_numbers[$post_id])) {
+                                            $number = $enfrute_numbers[$post_id] + 1;
+                                        } elseif ($event_type_slug === 'semco_trabalhos' && isset($semco_numbers[$post_id])) {
+                                            $number = $semco_numbers[$post_id] + 1;
+                                        }
+                                        echo esc_html(str_pad($number, 4, '0', STR_PAD_LEFT));
+                                        ?></span>
                                     </td>
                                     <td>
                                         <div class="sciflow-table-title fw-bold text-dark">
@@ -113,11 +145,11 @@ $query = new WP_Query($args);
                                         </span>
                                     </td>
                                     <td class="pe-4 text-end">
-                                        <?php if ($sciflow_status === 'rascunho' || $sciflow_status === 'em_correcao' || $sciflow_status === 'aguardando_pagamento'): ?>
+                                        <?php if (in_array($sciflow_status, array('rascunho', 'em_correcao', 'aguardando_pagamento', 'aprovado_com_consideracoes', 'reprovado'), true)): ?>
                                             <a href="<?php echo esc_url(add_query_arg('edit_id', $post_id, home_url('/submissao'))); ?>"
                                                 class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
                                                 <i class="bi bi-pencil-square me-1"></i>
-                                                <?php echo ($sciflow_status === 'em_correcao') ? 'Corrigir' : 'Ver/Editar'; ?>
+                                                <?php echo in_array($sciflow_status, array('em_correcao', 'aprovado_com_consideracoes', 'reprovado')) ? 'Alterar' : 'Ver/Editar'; ?>
                                             </a>
                                         <?php else: ?>
                                             <?php

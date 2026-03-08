@@ -15,6 +15,7 @@ if (!function_exists('inscricao_enfrute_setup')):
         register_nav_menus(array(
             'primary' => __('Primary Menu', 'inscricao-enfrute'),
             'inscritos' => __('Menu Inscritos', 'inscricao-enfrute'),
+            'palestrantes' => __('Menu Palestrantes', 'inscricao-enfrute'),
         ));
 
         // Ensure page attributes are supported
@@ -76,9 +77,9 @@ function inscricao_enfrute_nav_menu_args($args)
         $is_editor_revisor = false;
         $special_roles = array(
             'sciflow_enfrute_editor',
-            'sciflow_senco_editor',
+            'sciflow_semco_editor',
             'sciflow_enfrute_revisor',
-            'sciflow_senco_revisor',
+            'sciflow_semco_revisor',
             'administrator'
         );
 
@@ -89,7 +90,9 @@ function inscricao_enfrute_nav_menu_args($args)
             }
         }
 
-        if (!$is_editor_revisor && in_array('sciflow_inscrito', $roles)) {
+        if (!$is_editor_revisor && in_array('sciflow_speaker', $roles)) {
+            $args['theme_location'] = 'palestrantes';
+        } elseif (!$is_editor_revisor && in_array('sciflow_inscrito', $roles)) {
             $args['theme_location'] = 'inscritos';
         }
     }
