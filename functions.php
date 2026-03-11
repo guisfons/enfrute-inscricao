@@ -16,6 +16,8 @@ if (!function_exists('inscricao_enfrute_setup')):
             'primary' => __('Primary Menu', 'inscricao-enfrute'),
             'inscritos' => __('Menu Inscritos', 'inscricao-enfrute'),
             'palestrantes' => __('Menu Palestrantes', 'inscricao-enfrute'),
+            'editor_dashboard' => __('Menu do Editor', 'inscricao-enfrute'),
+            'reviewer_dashboard' => __('Menu do Revisor', 'inscricao-enfrute'),
         ));
 
         // Ensure page attributes are supported
@@ -74,25 +76,40 @@ function inscricao_enfrute_nav_menu_args($args)
         $roles = (array) $user->roles;
 
         // Editor and Revisor roles use 'primary' (default)
-        $is_editor_revisor = false;
-        $special_roles = array(
+        $is_editor = false;
+        $editor_roles = array(
             'sciflow_enfrute_editor',
             'sciflow_semco_editor',
-            'sciflow_enfrute_revisor',
-            'sciflow_semco_revisor',
             'administrator'
         );
 
-        foreach ($special_roles as $role) {
+        foreach ($editor_roles as $role) {
             if (in_array($role, $roles)) {
-                $is_editor_revisor = true;
+                $is_editor = true;
                 break;
             }
         }
 
-        if (!$is_editor_revisor && in_array('sciflow_speaker', $roles)) {
+        $is_reviewer = false;
+        $reviewer_roles = array(
+            'sciflow_enfrute_revisor',
+            'sciflow_semco_revisor',
+        );
+
+        foreach ($reviewer_roles as $role) {
+            if (in_array($role, $roles)) {
+                $is_reviewer = true;
+                break;
+            }
+        }
+
+        if ($is_editor && has_nav_menu('editor_dashboard')) {
+            $args['theme_location'] = 'editor_dashboard';
+        } elseif ($is_reviewer && has_nav_menu('reviewer_dashboard')) {
+            $args['theme_location'] = 'reviewer_dashboard';
+        } elseif (!$is_editor && !$is_reviewer && in_array('sciflow_speaker', $roles) && has_nav_menu('palestrantes')) {
             $args['theme_location'] = 'palestrantes';
-        } elseif (!$is_editor_revisor && in_array('sciflow_inscrito', $roles)) {
+        } elseif (!$is_editor && !$is_reviewer && in_array('sciflow_inscrito', $roles) && has_nav_menu('inscritos')) {
             $args['theme_location'] = 'inscritos';
         }
     }
@@ -361,4 +378,49 @@ function enfrute_get_registration_product()
     $product_id = !empty($product_ids[0]) ? absint($product_ids[0]) : 0;
 
     return $product_id ? wc_get_product($product_id) : false;
+}
+
+/**
+ * Helper to get the correct dashboard URL for a user based on their role.
+ */
+function enfrute_get_dashboard_redirect_url($user, $default_redirect)
+{
+    if (isset($user->roles) && is_array($user->roles)) {
+        $settings = get_option('sciflow_settings', array());
+        $roles = $user->roles;
+
+        if (in_array('administrator', $roles) || in_array('sciflow_enfrute_editor', $roles) || in_array('sciflow_semco_editor', $roles)) {
+            if (!empty($settings['editor_dashboard_url'])) {
+                return $settings['editor_dashboard_url'];
+            }
+        } elseif (in_array('sciflow_enfrute_revisor', $roles) || in_array('sciflow_semco_revisor', $roles)) {
+            if (!empty($settings['reviewer_dashboard_url'])) {
+                return $settings['reviewer_dashboard_url'];
+            }
+        } elseif (in_array('sciflow_speaker', $roles) || in_array('sciflow_inscrito', $roles)) {
+            if (!empty($settings['dashboard_url'])) {
+                return $settings['dashboard_url'];
+            }
+        }
+    }
+
+    return $default_redirect;
+}
+
+/**
+ * Handle standard WP login redirect.
+ */
+add_filter('login_redirect', 'enfrute_wp_login_redirect', 10, 3);
+function enfrute_wp_login_redirect($redirect_to, $request, $user)
+{
+    return enfrute_get_dashboard_redirect_url($user, $redirect_to);
+}
+
+/**
+ * Handle WooCommerce login redirect.
+ */
+add_filter('woocommerce_login_redirect', 'enfrute_woo_login_redirect', 10, 2);
+function enfrute_woo_login_redirect($redirect_to, $user)
+{
+    return enfrute_get_dashboard_redirect_url($user, $redirect_to);
 }

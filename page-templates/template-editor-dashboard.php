@@ -35,22 +35,24 @@ $args = array(
     'post_status' => ($is_semco_role || $is_enfrute_role) ? 'publish' : 'any',
 );
 
-// Exclude Drafts and Evaluation for event roles
+// Exclude Drafts, Pending Payment, and Approved with Considerations
+$excluded_statuses = array('rascunho', 'aguardando_pagamento', 'aprovado_com_consideracoes');
+
 if ($is_semco_role || $is_enfrute_role) {
     $args['meta_query'] = array(
         array(
             'key' => '_sciflow_status',
-            'value' => array('rascunho', 'em_avaliacao'),
+            'value' => $excluded_statuses,
             'compare' => 'NOT IN',
         ),
     );
 } else {
-    // For global admin, just exclude drafts
+    // For global admin, we also exclude the same irrelevant statuses to keep the panel clean
     $args['meta_query'] = array(
         array(
             'key' => '_sciflow_status',
-            'value' => 'rascunho',
-            'compare' => '!=',
+            'value' => $excluded_statuses,
+            'compare' => 'NOT IN',
         ),
     );
 }
@@ -108,15 +110,12 @@ $semco_numbers = array_flip($all_semco);
                 <div class="col-12 col-md-3">
                     <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-status">
                         <option value="">Todos os Status</option>
-                        <option value="rascunho">Rascunho</option>
-                        <option value="aguardando_pagamento">Pgto. Pendente</option>
                         <option value="submetido">Submetido</option>
                         <option value="em_avaliacao">Em Avaliação</option>
                         <option value="aguardando_decisao">Decisão Pendente</option>
                         <option value="em_correcao">Necessita Alterações</option>
                         <option value="aprovado">Aprovado</option>
                         <option value="reprovado">Reprovado</option>
-                        <option value="aprovado_com_consideracoes">Necessita Alterações (Aprovado)</option>
                         <option value="submetido_com_revisao">Submetido com Alterações</option>
                         <option value="apto_revisao">Apto para Revisão</option>
                         <option value="apto_publicacao">Apto para Publicação</option>
@@ -241,14 +240,8 @@ $semco_numbers = array_flip($all_semco);
                                     data-cultura="<?php echo esc_attr($cultura); ?>" data-area="<?php echo esc_attr($area); ?>">
                                     <td class="ps-4">
                                         <span class="text-muted small">#<?php
-                                        $event_type_slug = get_post_type($post_id);
-                                        $number = $post_id;
-                                        if ($event_type_slug === 'enfrute_trabalhos' && isset($enfrute_numbers[$post_id])) {
-                                            $number = $enfrute_numbers[$post_id] + 1;
-                                        } elseif ($event_type_slug === 'semco_trabalhos' && isset($semco_numbers[$post_id])) {
-                                            $number = $semco_numbers[$post_id] + 1;
-                                        }
-                                        echo esc_html(str_pad($number, 4, '0', STR_PAD_LEFT));
+                                        $visual_id = SciFlow_Status_Manager::get_visual_id($post_id);
+                                        echo esc_html(str_pad($visual_id, 2, '0', STR_PAD_LEFT));
                                         ?></span>
                                     </td>
                                     <td>

@@ -204,14 +204,8 @@ $semco_numbers = array_flip($all_semco);
                                     data-cultura="<?php echo esc_attr($cultura); ?>" data-area="<?php echo esc_attr($area); ?>">
                                     <td class="ps-4">
                                         <span class="text-muted small">#<?php
-                                        $event_type_slug = get_post_type($post_id);
-                                        $number = $post_id;
-                                        if ($event_type_slug === 'enfrute_trabalhos' && isset($enfrute_numbers[$post_id])) {
-                                            $number = $enfrute_numbers[$post_id] + 1;
-                                        } elseif ($event_type_slug === 'semco_trabalhos' && isset($semco_numbers[$post_id])) {
-                                            $number = $semco_numbers[$post_id] + 1;
-                                        }
-                                        echo esc_html(str_pad($number, 4, '0', STR_PAD_LEFT));
+                                        $visual_id = SciFlow_Status_Manager::get_visual_id($post_id);
+                                        echo esc_html(str_pad($visual_id, 2, '0', STR_PAD_LEFT));
                                         ?></span>
                                     </td>
                                     <td>
