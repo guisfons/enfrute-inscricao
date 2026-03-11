@@ -181,8 +181,8 @@ $semco_numbers = array_flip($all_semco);
                                     'reprovado' => 'Trabalho Reprovado',
                                     'aprovado_com_consideracoes' => 'Necessita Alterações',
                                     'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
-                                    'apto_revisao' => 'Apto para Revisão',
-                                    'apto_publicacao' => 'Apto para Publicação',
+                                    // 'apto_revisao' => 'Apto para Revisão',
+                                    // 'apto_publicacao' => 'Apto para Publicação',
                                 );
 
                                 $badge_classes = array(

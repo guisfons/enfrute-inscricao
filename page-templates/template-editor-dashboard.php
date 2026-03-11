@@ -117,8 +117,9 @@ $semco_numbers = array_flip($all_semco);
                         <option value="aprovado">Aprovado</option>
                         <option value="reprovado">Reprovado</option>
                         <option value="submetido_com_revisao">Submetido com Alterações</option>
-                        <option value="apto_revisao">Apto para Revisão</option>
-                        <option value="apto_publicacao">Apto para Publicação</option>
+                        <option value="poster_enviado">Pôster Enviado</option>
+                        <!-- <option value="apto_revisao">Apto para Revisão</option>
+                        <option value="apto_publicacao">Apto para Publicação</option> -->
                     </select>
                 </div>
                 <div class="col-12 col-md-3">

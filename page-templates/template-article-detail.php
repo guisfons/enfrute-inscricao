@@ -230,7 +230,16 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                         <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                             <span class="text-muted small">ID do Trabalho</span>
                             <span class="small fw-bold">#
-                                <?php echo $article_id; ?>
+                                <?php
+                                $event_type_slug = get_post_type($article_id);
+                                $number = $article_id;
+                                if ($event_type_slug === 'enfrute_trabalhos' && isset($enfrute_numbers[$article_id])) {
+                                    $number = $enfrute_numbers[$article_id] + 1;
+                                } elseif ($event_type_slug === 'semco_trabalhos' && isset($semco_numbers[$article_id])) {
+                                    $number = $semco_numbers[$article_id] + 1;
+                                }
+                                echo esc_html(str_pad($number, 4, '0', STR_PAD_LEFT));
+                                ?>
                             </span>
                         </div>
 
@@ -274,31 +283,106 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                     </div>
                 </div>
 
-                <!-- Observations Section (Visible to Author, Editor, Reviewer) -->
-                <?php if ($reviewer_notes || $editorial_notes): ?>
+                <!-- Poster Section -->
+                <?php
+                $poster_id = get_post_meta($article_id, '_sciflow_poster_id', true);
+                if ($poster_id): 
+                    $poster_url = wp_get_attachment_url($poster_id);
+                    $poster_file = get_attached_file($poster_id);
+                    $poster_size = $poster_file && file_exists($poster_file) ? size_format(filesize($poster_file)) : 'N/A';
+                ?>
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-success border-4">
+                        <div class="card-body p-4">
+                            <h3 class="h6 fw-bold text-dark mb-3"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Pôster Anexado</h3>
+                            <p class="small text-muted mb-3">O arquivo PDF do pôster está disponível para este trabalho.</p>
+                            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
+                                <?php if ($poster_file): ?>
+                                    <span class="small text-truncate me-2" style="max-width: 200px;" title="<?php echo esc_attr(basename($poster_file)); ?>">
+                                        <i class="bi bi-file-pdf me-1"></i><?php echo esc_html(basename($poster_file)); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <span class="badge bg-secondary"><?php echo esc_html($poster_size); ?></span>
+                            </div>
+                            <a href="<?php echo esc_url($poster_url); ?>" target="_blank" class="btn btn-success btn-sm w-100 rounded-pill py-2 fw-bold">
+                                <i class="bi bi-eye me-1"></i> Visualizar Pôster
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Observations Section (Visible only to Editor and Reviewer) -->
+                <?php if ($reviewer_notes && !$is_author): ?>
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                         <div class="card-body p-4">
                             <h3 class="h5 fw-bold text-dark border-bottom pb-2 mb-3">Observações Gerais</h3>
+                            
+                            <div class="mb-4">
+                                <h4 class="h6 fw-bold text-info"><i class="bi bi-person-badge me-2"></i>Parecer do Revisor
+                                </h4>
+                                
+                                <?php if (!empty($reviewer_scores) && ($is_editor || current_user_can('administrator'))): ?>
+                                    <div class="bg-white border rounded-3 p-3 mb-3 small">
+                                        <strong class="d-block mb-2 text-dark border-bottom pb-1">Notas por Critério:</strong>
+                                        <ul class="list-unstyled mb-0 column">
+                                            <?php
+                                            $criteria = array(
+                                                'originalidade' => 'Originalidade',
+                                                'objetividade' => 'Objetividade',
+                                                'organizacao' => 'Organização',
+                                                'metodologia' => 'Metodologia',
+                                                'aderencia' => 'Aderência'
+                                            );
+                                            $total_score = 0;
+                                            foreach ($criteria as $key => $label) {
+                                                $score = isset($reviewer_scores[$key]) ? floatval($reviewer_scores[$key]) : 0;
+                                                $total_score += $score;
+                                                echo '<li class="col-sm-12 mb-1 d-flex justify-content-between">';
+                                                echo '<span class="text-muted">' . esc_html($label) . ':</span> ';
+                                                echo '<span class="fw-bold">' . number_format($score, 1, ',', '.') . ' / 10</span>';
+                                                echo '</li>';
+                                            }
+                                            ?>
+                                        </ul>
+                                        <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                                            <strong class="text-dark">Nota Total:</strong>
+                                            <strong class="text-success fs-6"><?php echo number_format($total_score, 1, ',', '.'); ?> / 50</strong>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
 
-                            <?php if ($reviewer_notes): ?>
-                                <div class="mb-4">
-                                    <h4 class="h6 fw-bold text-info"><i class="bi bi-person-badge me-2"></i>Parecer do Revisor
-                                    </h4>
+                                <?php if ($reviewer_notes): ?>
                                     <div class="bg-light p-3 rounded-3 border-start border-info border-4 small">
                                         <?php echo wpautop(esc_html($reviewer_notes)); ?>
                                     </div>
-                                </div>
-                            <?php endif; ?>
+                                <?php else: ?>
+                                    <p class="small text-muted italic">Nenhuma observação textual preenchida.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
-                            <?php if ($editorial_notes && !$is_author): ?>
-                                <div>
-                                    <h4 class="h6 fw-bold text-primary"><i class="bi bi-person-workspace me-2"></i>Decisão
-                                        Editorial (Para o Revisor)</h4>
-                                    <div class="bg-light p-3 rounded-3 border-start border-primary border-4 small">
-                                        <?php echo wpautop(esc_html($editorial_notes)); ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                <!-- Editor Notes Section (Conditionally Visible) -->
+                <?php 
+                $decision = get_post_meta($article_id, '_sciflow_decision', true);
+                
+                // Author should see notes if: 
+                // 1) The status requires their attention (em_correcao)
+                // 2) There is no reviewer
+                // 3) The decision explicitly mentions them
+                $is_note_for_author = $sciflow_status === 'em_correcao' 
+                                    || !$reviewer_id 
+                                    || in_array($decision, ['return_to_author', 'approve', 'reject', 'approved_with_considerations']);
+                
+                if ($editorial_notes && (!$is_author || $is_note_for_author)): 
+                    $note_title = ($is_note_for_author && $is_author) ? 'Observações Editoriais' : 'Decisão Editorial (Para o Revisor)';
+                ?>
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-body p-4">
+                            <h4 class="h6 fw-bold text-primary"><i class="bi bi-person-workspace me-2"></i><?php echo esc_html($note_title); ?></h4>
+                            <div class="bg-light p-3 rounded-3 border-start border-primary border-4 small">
+                                <?php echo wpautop(esc_html($editorial_notes)); ?>
+                            </div>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -368,6 +452,18 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                                         <input type="hidden" name="post_id" value="<?php echo $article_id; ?>">
                                         <input type="hidden" name="action" value="sciflow_assign_reviewer">
                                     </form>
+
+                                    <?php if ($reviewer_id != $current_user_id): ?>
+                                    <form id="sciflow-assume-form" class="mt-3 border-top pt-3">
+                                        <p class="small text-muted mb-2">Deseja assumir a avaliação deste trabalho?</p>
+                                        <button type="submit" class="btn btn-warning btn-sm rounded-pill w-100 fw-bold">
+                                            <i class="bi bi-person-check-fill me-1"></i> Assumir Avaliação (Como Editor)
+                                        </button>
+                                        <input type="hidden" name="reviewer_id" value="<?php echo $current_user_id; ?>">
+                                        <input type="hidden" name="post_id" value="<?php echo $article_id; ?>">
+                                        <input type="hidden" name="action" value="sciflow_assign_reviewer">
+                                    </form>
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
 
@@ -385,7 +481,7 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                                 </div>
                             <?php endif; ?>
 
-                            <?php if ($sciflow_status === 'aguardando_decisao' || $sciflow_status === 'submetido_com_revisao'): ?>
+                            <?php if (in_array($sciflow_status, ['aguardando_decisao', 'submetido_com_revisao', 'submetido'])): ?>
                                 <div class="mt-4 pt-3 border-top">
                                     <label class="form-label small fw-bold text-muted">Decisão Editorial</label>
                                     <form id="sciflow-decision-form">
@@ -394,8 +490,10 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
                                                 class="form-select form-select-sm mb-2 shadow-none border-light-subtle">
                                                 <option value="">Selecione a decisão...</option>
                                                 <option value="approve">Aprovar e Publicar</option>
-                                                <option value="return_to_author">Solicitar Alterações (Autor)</option>
-                                                <option value="return_to_reviewer">Voltar para Revisão (Revisor)</option>
+                                                <!-- <option value="return_to_author">Solicitar Alterações (Autor)</option> -->
+                                                <?php if ($sciflow_status !== 'submetido' && !empty($reviewer_id)): ?>
+                                                    <option value="return_to_reviewer">Voltar para Revisão (Revisor)</option>
+                                                <?php endif; ?>
                                                 <option value="reject">Reprovar Trabalho</option>
                                             </select>
                                         </div>
@@ -552,6 +650,7 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
         handleAjax('sciflow-assign-form');
         handleAjax('sciflow-decision-form');
         handleAjax('sciflow-review-form');
+        handleAjax('sciflow-assume-form');
         handleAjax('sciflow-confirm-payment-form');
     });
 </script>
