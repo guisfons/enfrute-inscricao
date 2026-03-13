@@ -118,6 +118,10 @@ $semco_numbers = array_flip($all_semco);
                         <option value="reprovado">Reprovado</option>
                         <option value="submetido_com_revisao">Submetido com Alterações</option>
                         <option value="poster_enviado">Pôster Enviado</option>
+                        <option value="poster_em_correcao">Pôster em Correção</option>
+                        <option value="poster_reenviado">Pôster Reenviado</option>
+                        <option value="apto_publicacao">Apto para Publicação</option>
+                        <option value="poster_reprovado">Pôster Reprovado</option>
                         <!-- <option value="apto_revisao">Apto para Revisão</option>
                         <option value="apto_publicacao">Apto para Publicação</option> -->
                     </select>
@@ -201,12 +205,16 @@ $semco_numbers = array_flip($all_semco);
                                     'em_avaliacao' => 'Em Avaliação',
                                     'aguardando_decisao' => 'Decisão Pendente',
                                     'em_correcao' => 'Necessita Alterações',
-                                    'aprovado' => 'Aprovado',
+                                    'aprovado' => 'Aprovado / Aguardando Pôster',
                                     'reprovado' => 'Reprovado',
                                     'aprovado_com_consideracoes' => 'Necessita Alterações',
                                     'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
+                                    'poster_enviado' => 'Pôster Enviado',
+                                    'poster_em_correcao' => 'Pôster em Correção',
+                                    'poster_reenviado' => 'Pôster Reenviado',
                                     'apto_revisao' => 'Apto para Revisão',
                                     'apto_publicacao' => 'Apto para Publicação',
+                                    'poster_reprovado' => 'Pôster Reprovado',
                                 );
 
                                 $badge_classes = array(
@@ -220,8 +228,12 @@ $semco_numbers = array_flip($all_semco);
                                     'reprovado' => 'bg-danger text-white',
                                     'aprovado_com_consideracoes' => 'bg-info text-white',
                                     'submetido_com_revisao' => 'bg-info text-white',
+                                    'poster_enviado' => 'bg-info text-white',
+                                    'poster_em_correcao' => 'bg-warning text-dark',
+                                    'poster_reenviado' => 'bg-info text-white',
                                     'apto_revisao' => 'bg-info text-white',
                                     'apto_publicacao' => 'bg-success text-white',
+                                    'poster_reprovado' => 'bg-danger text-white',
                                 );
 
                                 $cultura = get_post_meta($post_id, '_sciflow_cultura', true);

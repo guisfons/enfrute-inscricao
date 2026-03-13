@@ -181,6 +181,11 @@ $semco_numbers = array_flip($all_semco);
                                     'reprovado' => 'Trabalho Reprovado',
                                     'aprovado_com_consideracoes' => 'Necessita Alterações',
                                     'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
+                                    'poster_enviado' => 'Pôster Enviado',
+                                    'poster_em_correcao' => 'Pôster em Correção',
+                                    'poster_reenviado' => 'Pôster Reenviado',
+                                    'apto_publicacao' => 'Apto para Publicação',
+                                    'poster_reprovado' => 'Pôster Reprovado',
                                     // 'apto_revisao' => 'Apto para Revisão',
                                     // 'apto_publicacao' => 'Apto para Publicação',
                                 );
@@ -192,6 +197,11 @@ $semco_numbers = array_flip($all_semco);
                                     'aprovado' => 'sciflow-badge--published',
                                     'reprovado' => 'bg-danger text-white',
                                     'submetido_com_revisao' => 'bg-info text-white',
+                                    'poster_enviado' => 'bg-info text-white',
+                                    'poster_em_correcao' => 'bg-warning text-dark',
+                                    'poster_reenviado' => 'bg-info text-white',
+                                    'apto_publicacao' => 'sciflow-badge--published',
+                                    'poster_reprovado' => 'bg-danger text-white',
                                 );
 
                                 $cultura = get_post_meta($post_id, '_sciflow_cultura', true);

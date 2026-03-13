@@ -87,11 +87,15 @@ $semco_numbers = array_flip($all_semco);
                                     'em_avaliacao' => 'Em Avaliação',
                                     'aguardando_decisao' => 'Aguardando Decisão',
                                     'em_correcao' => 'Alterações Solicitadas',
-                                    'aprovado' => 'Aprovado',
+                                    'aprovado' => 'Aprovado / Aguardando Pôster',
                                     'reprovado' => 'Reprovado',
                                     'aprovado_com_consideracoes' => 'Necessita Alterações',
                                     'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
                                     'poster_enviado' => 'Pôster Enviado',
+                                    'poster_em_correcao' => 'Pôster em Correção',
+                                    'poster_reenviado' => 'Pôster Reenviado',
+                                    'apto_publicacao' => 'Apto para Publicação',
+                                    'poster_reprovado' => 'Pôster Reprovado',
                                     'confirmado' => 'Confirmado',
                                 );
 
@@ -106,6 +110,11 @@ $semco_numbers = array_flip($all_semco);
                                     'reprovado' => 'bg-danger text-white',
                                     'aprovado_com_consideracoes' => 'bg-info text-white',
                                     'submetido_com_revisao' => 'bg-info text-white',
+                                    'poster_enviado' => 'bg-info text-white',
+                                    'poster_em_correcao' => 'bg-warning text-dark',
+                                    'poster_reenviado' => 'bg-info text-white',
+                                    'apto_publicacao' => 'sciflow-badge--published',
+                                    'poster_reprovado' => 'bg-danger text-white',
                                 );
 
                                 $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
