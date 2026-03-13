@@ -303,11 +303,42 @@ function enfrute_checkout_js()
             toggleBrazilFields();
             applyMasks();
 
+            // International payment notice
+            function checkInternationalPayment() {
+                var country = $('#billing_country, [name="billing_country"], .wc-block-components-address-form__country select').val();
+                if (country && country !== 'BR') {
+                    var noticeText = 'Para inscritos estrangeiros, o fluxo de pagamento internacional será implementado em breve. Por favor, entre em contato com a equipe organizadora para orientações.';
+                    
+                    // Main notice at top
+                    if (!$('#enfrute-international-notice').length) {
+                        var mainNoticeHtml = '<div id="enfrute-international-notice" class="woocommerce-info enfrute-dynamic-notice">' + noticeText + '</div>';
+                        $('.woocommerce-before-checkout-form, .wc-block-checkout__before').first().prepend(mainNoticeHtml);
+                    }
+                    
+                    // Payment area notice
+                    if (!$('#payment-loc-enfrute-international-notice').length) {
+                        var paymentNoticeHtml = '<div id="payment-loc-enfrute-international-notice" class="woocommerce-info enfrute-dynamic-notice">' + noticeText + '</div>';
+                        var $paymentArea = $('.woocommerce-checkout-payment, .wc-block-checkout__payment-method').first();
+                        if ($paymentArea.length) {
+                             $paymentArea.before(paymentNoticeHtml);
+                        }
+                    }
+                } else {
+                    $('.enfrute-dynamic-notice').remove();
+                }
+            }
+
+            $(document.body).on('change updated_checkout', '#billing_country, [name="billing_country"], .wc-block-components-address-form__country select', function() {
+                checkInternationalPayment();
+            });
+            checkInternationalPayment();
+
             // Safety poll for dynamic block loading
             var pollCount = 0;
             var safetyPoll = setInterval(function () {
                 toggleBrazilFields();
                 applyMasks();
+                checkInternationalPayment();
                 if (++pollCount > 10) clearInterval(safetyPoll);
             }, 1000);
         });
@@ -321,10 +352,32 @@ function enfrute_checkout_js()
         .wc-block-components-address-form .sciflow-brazil-field {
             margin-bottom: 24px;
         }
+
+        #enfrute-international-notice {
+            margin-bottom: 25px;
+            border-left: 4px solid #3CAC34;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
     </style>
     <?php
 }
 add_action('wp_footer', 'enfrute_checkout_js');
+
+/**
+ * PHP fallback notice for international payments.
+ */
+add_action('woocommerce_before_checkout_form', 'enfrute_international_payment_notice_php', 5);
+function enfrute_international_payment_notice_php() {
+    $customer_country = WC()->customer->get_billing_country();
+    if ($customer_country && $customer_country !== 'BR') {
+       wc_print_notice(
+           __('Para inscritos estrangeiros, o fluxo de pagamento internacional será implementado em breve. Por favor, entre em contato com a equipe organizadora para orientações.', 'enfrute'),
+           'notice'
+       );
+    }
+}
 
 /**
  * Display CPF/CNPJ in order emails.
@@ -423,4 +476,140 @@ add_filter('woocommerce_login_redirect', 'enfrute_woo_login_redirect', 10, 2);
 function enfrute_woo_login_redirect($redirect_to, $user)
 {
     return enfrute_get_dashboard_redirect_url($user, $redirect_to);
+}
+
+/**
+ * Filter available payment gateways based on backorder status.
+ * If any item is "sob encomenda", only allow manual payment (BACS).
+ */
+add_filter('woocommerce_available_payment_gateways', 'enfrute_restrict_gateways_for_backorder');
+function enfrute_restrict_gateways_for_backorder($available_gateways)
+{
+    if (is_admin()) {
+        return $available_gateways;
+    }
+
+    $customer_country = WC()->customer ? WC()->customer->get_billing_country() : '';
+    $has_backorder = false;
+    if (WC()->cart) {
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_on_backorder($cart_item['quantity'])) {
+                $has_backorder = true;
+                break;
+            }
+        }
+    }
+
+    // 1. If explicitly foreign country, hide Sicredi/PayGo
+    if (!empty($customer_country) && strtoupper($customer_country) !== 'BR') {
+        unset($available_gateways['sicredi']);
+        unset($available_gateways['paygo']);
+        unset($available_gateways['sicredi_pix']);
+    }
+
+    // 2. If backorder, only keep "bacs" (Solicitar Reserva)
+    if ($has_backorder) {
+        $new_gateways = array();
+        if (isset($available_gateways['bacs'])) {
+            $new_gateways['bacs'] = $available_gateways['bacs'];
+        }
+        $available_gateways = $new_gateways;
+    }
+
+    return $available_gateways;
+}
+
+/**
+ * Rename the BACS gateway title and description when backorder is active.
+ */
+add_filter('woocommerce_gateway_title', 'enfrute_rename_bacs_gateway_title', 10, 2);
+function enfrute_rename_bacs_gateway_title($title, $gateway_id)
+{
+    if ($gateway_id === 'bacs') {
+        $has_backorder = false;
+        if (WC()->cart) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_on_backorder($cart_item['quantity'])) {
+                    $has_backorder = true;
+                    break;
+                }
+            }
+        }
+        if ($has_backorder) {
+            return __('Solicitar Inscrição (Análise Manual/Reserva)', 'enfrute');
+        }
+    }
+    return $title;
+}
+
+add_filter('woocommerce_gateway_description', 'enfrute_rename_bacs_gateway_desc', 10, 2);
+function enfrute_rename_bacs_gateway_desc($description, $gateway_id)
+{
+    if ($gateway_id === 'bacs') {
+        $has_backorder = false;
+        if (WC()->cart) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_on_backorder($cart_item['quantity'])) {
+                    $has_backorder = true;
+                    break;
+                }
+            }
+        }
+        if ($has_backorder) {
+            return __('Seu pedido será enviado para análise da equipe. Você receberá um e-mail com a confirmação após a aprovação manual.', 'enfrute');
+        }
+    }
+    return $description;
+}
+
+/**
+ * Change Checkout button text for backorders.
+ */
+add_filter('woocommerce_order_button_text', 'enfrute_backorder_button_text');
+function enfrute_backorder_button_text($button_text)
+{
+    $has_backorder = false;
+    if (WC()->cart) {
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_on_backorder($cart_item['quantity'])) {
+                $has_backorder = true;
+                break;
+            }
+        }
+    }
+
+    if ($has_backorder) {
+        return __('Enviar para Aprovação Manual', 'enfrute');
+    }
+
+    return $button_text;
+}
+
+/**
+ * Show notice on checkout when backorder restriction is active.
+ */
+add_action('woocommerce_before_checkout_form', 'enfrute_backorder_checkout_notice');
+function enfrute_backorder_checkout_notice()
+{
+    $has_backorder = false;
+    if (WC()->cart) {
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_on_backorder($cart_item['quantity'])) {
+                $has_backorder = true;
+                break;
+            }
+        }
+    }
+
+    if ($has_backorder) {
+        wc_print_notice(
+            __('Este item está disponível apenas mediante solicitação e aprovação externa. Por favor, finalize o pedido para que nossa equipe possa analisar sua inscrição.', 'enfrute'),
+            'notice'
+        );
+    }
 }

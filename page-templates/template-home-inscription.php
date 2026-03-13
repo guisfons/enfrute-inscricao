@@ -85,7 +85,7 @@ $product = enfrute_get_registration_product();
                             <div>
                                 <span class="text-muted small text-uppercase fw-bold d-block mb-1">Investimento</span>
                                 <span class="display-5 fw-900 text-dark">
-                                    <?php echo $product->get_price_html(); ?>
+                                    R$ <?php echo get_post_meta($product->get_id(), '_price', true); ?>,00
                                 </span>
                             </div>
                         </div>
