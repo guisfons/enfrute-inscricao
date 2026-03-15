@@ -434,6 +434,82 @@ function enfrute_get_registration_product()
 }
 
 /**
+ * Check if the current (or given) user has a completed/processing registration order.
+ * Administrators and editors always pass.
+ *
+ * @param int|null $user_id  Defaults to current user.
+ * @return bool
+ */
+function enfrute_user_has_paid_registration($user_id = null)
+{
+    if (!function_exists('wc_get_orders')) {
+        return false;
+    }
+
+    if (null === $user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    if (!$user_id) {
+        return false;
+    }
+
+    // Admins and editors always have access
+    $user = get_userdata($user_id);
+    if ($user) {
+        $bypass_roles = array('administrator', 'sciflow_enfrute_editor', 'sciflow_semco_editor');
+        foreach ($bypass_roles as $role) {
+            if (in_array($role, (array) $user->roles, true)) {
+                return true;
+            }
+        }
+    }
+
+    // Get configured product IDs
+    $settings    = get_option('sciflow_settings', array());
+    $raw_ids     = $settings['woo_product_ids'] ?? '';
+    $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
+
+    if (empty($product_ids)) {
+        // If no product configured, allow access
+        return true;
+    }
+
+    // Look for a completed or processing order for this user
+    $orders = wc_get_orders(array(
+        'customer_id' => $user_id,
+        'status'      => array('wc-completed', 'wc-processing'),
+        'limit'       => -1,
+    ));
+
+    foreach ($orders as $order) {
+        foreach ($order->get_items() as $item) {
+            $pid = absint($item->get_product_id());
+            if (in_array($pid, $product_ids, true)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Get the URL of the registration home page (template-home-inscription).
+ */
+function enfrute_get_inscription_home_url()
+{
+    $pages = get_pages(array(
+        'meta_key'   => '_wp_page_template',
+        'meta_value' => 'page-templates/template-home-inscription.php',
+    ));
+    if (!empty($pages)) {
+        return get_permalink($pages[0]->ID);
+    }
+    return home_url('/inscricao');
+}
+
+/**
  * Helper to get the correct dashboard URL for a user based on their role.
  */
 function enfrute_get_dashboard_redirect_url($user, $default_redirect)
@@ -612,4 +688,100 @@ function enfrute_backorder_checkout_notice()
             'notice'
         );
     }
+}
+
+/**
+ * Helper: check if an order contains a backordered product.
+ */
+function enfrute_order_has_backorder($order)
+{
+    foreach ($order->get_items() as $item) {
+        $product = $item->get_product();
+        if ($product && $product->is_on_backorder($item->get_quantity())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Force order status to "on-hold" for orders with backordered items.
+ * Fires on classic checkout.
+ */
+add_action('woocommerce_checkout_order_processed', 'enfrute_force_on_hold_for_backorders', 99, 3);
+function enfrute_force_on_hold_for_backorders($order_id, $posted_data, $order)
+{
+    if (enfrute_order_has_backorder($order)) {
+        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'enfrute'));
+        $order->save();
+    }
+}
+
+/**
+ * Force order status to "on-hold" for backorders via Store API (Block Checkout).
+ */
+add_action('woocommerce_store_api_checkout_order_processed', 'enfrute_force_on_hold_for_backorders_store_api', 99, 1);
+function enfrute_force_on_hold_for_backorders_store_api($order)
+{
+    if (enfrute_order_has_backorder($order)) {
+        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'enfrute'));
+        $order->save();
+    }
+}
+
+/**
+ * Prevent payment_complete from moving a backorder order to processing/completed.
+ * This is the most critical hook — fires regardless of gateway.
+ */
+add_filter('woocommerce_payment_complete_order_status', 'enfrute_prevent_completion_for_backorders', 99, 3);
+function enfrute_prevent_completion_for_backorders($status, $order_id, $order)
+{
+    if (enfrute_order_has_backorder($order)) {
+        return 'on-hold';
+    }
+    return $status;
+}
+
+/**
+ * Specifically for BACS (Bank Transfer), ensure it stays on-hold for backorders.
+ */
+add_filter('woocommerce_bacs_process_payment_order_status', 'enfrute_bacs_status_for_backorders', 99, 2);
+function enfrute_bacs_status_for_backorders($status, $order)
+{
+    if (enfrute_order_has_backorder($order)) {
+        return 'on-hold';
+    }
+    return $status;
+}
+
+/**
+ * Also intercept Sicredi/PayGo gateways to keep on-hold if somehow they are used.
+ */
+add_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99, 4);
+function enfrute_revert_backorder_status_if_completed($order_id, $old_status, $new_status, $order)
+{
+    // If an order with backorder items tries to go to processing or completed, revert it.
+    if (in_array($new_status, array('processing', 'completed'), true) && enfrute_order_has_backorder($order)) {
+        // Remove action temporarily to avoid infinite loop
+        remove_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99);
+        $order->update_status('on-hold', __('Status revertido: pedido com item sob encomenda aguarda aprovação manual.', 'enfrute'));
+        $order->save();
+        add_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99, 4);
+    }
+}
+
+/**
+ * Show a clear "awaiting approval" message on the thank-you page for backorder orders.
+ */
+add_action('woocommerce_thankyou', 'enfrute_backorder_thankyou_notice', 5);
+function enfrute_backorder_thankyou_notice($order_id)
+{
+    $order = wc_get_order($order_id);
+    if (!$order || !enfrute_order_has_backorder($order)) {
+        return;
+    }
+    echo '<div class="woocommerce-info" style="margin-bottom:20px;border-left:4px solid #f0ad4e;background:#fff8e6;padding:16px;border-radius:6px;">';
+    echo '<strong>' . esc_html__('Solicitação de inscrição enviada!', 'enfrute') . '</strong><br>';
+    echo esc_html__('Seu pedido foi enviado para análise manual pela nossa equipe. Você receberá um e-mail assim que sua inscrição for aprovada. Não é necessário realizar nenhum pagamento agora.', 'enfrute');
+    echo '</div>';
 }

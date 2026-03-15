@@ -11,11 +11,74 @@ get_header();
 
 $product = enfrute_get_registration_product();
 
+// Detect if user was redirected from a restricted page
+$inscricao_required = isset($_GET['inscricao_required']) && $_GET['inscricao_required'] === '1';
+
+// Detect on-hold orders (awaiting manual approval) for logged-in users
+$user_on_hold = false;
+if (is_user_logged_in() && function_exists('wc_get_orders')) {
+    $settings    = get_option('sciflow_settings', array());
+    $raw_ids     = $settings['woo_product_ids'] ?? '';
+    $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
+
+    if (!empty($product_ids)) {
+        $on_hold_orders = wc_get_orders(array(
+            'customer_id' => get_current_user_id(),
+            'status'      => array('wc-on-hold'),
+            'limit'       => -1,
+        ));
+        foreach ($on_hold_orders as $ord) {
+            foreach ($ord->get_items() as $it) {
+                if (in_array(absint($it->get_product_id()), $product_ids, true)) {
+                    $user_on_hold = true;
+                    break 2;
+                }
+            }
+        }
+    }
+}
+
 ?>
+
 
 <main class="sciflow-home-inscription min-vh-100 py-5 bg-white">
     <div class="container py-lg-5">
-        <?php if ($product): ?>
+
+        <?php
+        // Notice for users redirected because they don't have a completed registration
+        if ($inscricao_required): ?>
+            <div class="alert mb-4 px-4 py-3 rounded-3 d-flex align-items-start gap-3"
+                 style="background:#fff3cd;border:1px solid #ffc107;color:#856404;">
+                <i class="bi bi-exclamation-triangle-fill fs-5 mt-1 flex-shrink-0"></i>
+                <div>
+                    <?php if ($user_on_hold): ?>
+                        <strong>Inscrição em análise</strong><br>
+                        Sua solicitação de inscrição está sendo analisada pela nossa equipe. Você receberá um e-mail assim que for aprovada. Para dúvidas, entre em contato com a organização.
+                    <?php else: ?>
+                        <strong>Inscrição necessária</strong><br>
+                        Você precisa ter uma inscrição confirmada para acessar essa página. Realize su inscrição abaixo ou aguarde a confirmação do seu pagamento.
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php
+        // If user has a pending on-hold order, show status panel instead of purchase CTA
+        if ($user_on_hold): ?>
+            <div class="text-center py-5">
+                <div class="mb-4" style="font-size:5rem;">⏳</div>
+                <h2 class="fw-900 text-dark mb-3">Inscrição em Análise</h2>
+                <p class="text-muted fs-5 mb-4" style="max-width:520px;margin:0 auto;">
+                    Sua solicitação de inscrição foi recebida e está aguardando <strong>aprovação manual</strong> pela equipe organizadora.<br><br>
+                    Você receberá um e-mail de confirmação assim que sua inscrição for aprovada. Enquanto isso, ainda não é possível acessar o painel de submissões.
+                </p>
+                <a href="<?php echo esc_url(wc_get_page_permalink('myaccount')); ?>"
+                   class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 fw-bold">
+                    <i class="bi bi-receipt me-2"></i> Ver Meus Pedidos
+                </a>
+            </div>
+        <?php elseif ($product): ?>
+
             <div class="row align-items-center g-5">
                 <!-- Product Visual -->
                 <div class="col-lg-6 order-lg-2">
@@ -85,7 +148,15 @@ $product = enfrute_get_registration_product();
                             <div>
                                 <span class="text-muted small text-uppercase fw-bold d-block mb-1">Investimento</span>
                                 <span class="display-5 fw-900 text-dark">
-                                    R$ <?php echo get_post_meta($product->get_id(), '_price', true); ?>,00
+                                    <?php 
+                                    if ($product->is_type('variable')) {
+                                        $prices = $product->get_variation_prices(true);
+                                        $max_price = !empty($prices['price']) ? max($prices['price']) : $product->get_price();
+                                        echo wc_price($max_price);
+                                    } else {
+                                        echo $product->get_price_html();
+                                    }
+                                    ?>
                                 </span>
                             </div>
                         </div>
@@ -96,9 +167,9 @@ $product = enfrute_get_registration_product();
                                 <i class="bi bi-cart-plus me-2"></i> Inscrever-se Agora
                             </a>
                             <?php if (is_user_logged_in()): ?>
-                                <a href="<?php echo esc_url(home_url('/meus-trabalhos')); ?>"
+                                <a href="<?php echo esc_url(home_url('/meus-artigos')); ?>"
                                     class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 fw-bold">
-                                    Meus Trabalhos
+                                    Meus Artigos
                                 </a>
                             <?php endif; ?>
                         </div>

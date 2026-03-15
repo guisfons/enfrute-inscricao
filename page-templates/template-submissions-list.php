@@ -7,11 +7,19 @@ get_header();
 
 $user_id = get_current_user_id();
 
+// --- Access Control ---
 if (!$user_id) {
     echo '<div class="container py-5"><p>Por favor, faça login para ver suas submissões.</p></div>';
     get_footer();
     return;
 }
+if (!enfrute_user_has_paid_registration($user_id)) {
+    $redirect = enfrute_get_inscription_home_url();
+    wp_redirect(add_query_arg('inscricao_required', '1', $redirect));
+    exit;
+}
+// --- /Access Control ---
+
 
 $args = array(
     'post_type' => array('enfrute_trabalhos', 'semco_trabalhos'),

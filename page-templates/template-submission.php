@@ -4,7 +4,20 @@ Template Name: Submissão de Artigo
 Template Post Type: page
 */
 
+// --- Access Control ---
+if (!is_user_logged_in()) {
+    wp_redirect(wp_login_url(get_permalink()));
+    exit;
+}
+if (!enfrute_user_has_paid_registration()) {
+    $redirect = enfrute_get_inscription_home_url();
+    wp_redirect(add_query_arg('inscricao_required', '1', $redirect));
+    exit;
+}
+// --- /Access Control ---
+
 get_header(); ?>
+
 
 <main id="primary" class="site-main submission-page">
     <header class="page-header">
