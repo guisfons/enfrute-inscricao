@@ -534,16 +534,19 @@ function enfrute_restrict_gateways_for_backorder($available_gateways)
     }
 
     // 1. Handling for international vs domestic
+    $paypal_gateways = array('paypal', 'ppcp-gateway');
     if (!empty($customer_country) && strtoupper($customer_country) !== 'BR') {
         // International: Only allow PayPal
         foreach ($available_gateways as $gateway_id => $gateway) {
-            if ($gateway_id !== 'paypal') {
+            if (!in_array($gateway_id, $paypal_gateways)) {
                 unset($available_gateways[$gateway_id]);
             }
         }
     } else {
         // Brazil: Hide PayPal
-        unset($available_gateways['paypal']);
+        foreach ($paypal_gateways as $paypal_id) {
+            unset($available_gateways[$paypal_id]);
+        }
     }
 
     // 2. If backorder and Brazil, only keep "bacs" (Solicitar Reserva)
