@@ -303,42 +303,16 @@ function enfrute_checkout_js()
             toggleBrazilFields();
             applyMasks();
 
-            // International payment notice
-            function checkInternationalPayment() {
-                var country = $('#billing_country, [name="billing_country"], .wc-block-components-address-form__country select').val();
-                if (country && country !== 'BR') {
-                    var noticeText = 'For international registrants, the international payment process will be implemented shortly. Please contact the organizing team for further instructions.';
-                    
-                    // Main notice at top
-                    if (!$('#enfrute-international-notice').length) {
-                        var mainNoticeHtml = '<div id="enfrute-international-notice" class="woocommerce-info enfrute-dynamic-notice">' + noticeText + '</div>';
-                        $('.woocommerce-before-checkout-form, .wc-block-checkout__before').first().prepend(mainNoticeHtml);
-                    }
-                    
-                    // Payment area notice
-                    if (!$('#payment-loc-enfrute-international-notice').length) {
-                        var paymentNoticeHtml = '<div id="payment-loc-enfrute-international-notice" class="woocommerce-info enfrute-dynamic-notice">' + noticeText + '</div>';
-                        var $paymentArea = $('.woocommerce-checkout-payment, .wc-block-checkout__payment-method').first();
-                        if ($paymentArea.length) {
-                             $paymentArea.before(paymentNoticeHtml);
-                        }
-                    }
-                } else {
-                    $('.enfrute-dynamic-notice').remove();
-                }
-            }
 
-            $(document.body).on('change updated_checkout', '#billing_country, [name="billing_country"], .wc-block-components-address-form__country select', function() {
-                checkInternationalPayment();
-            });
-            checkInternationalPayment();
 
             // Safety poll for dynamic block loading
             var pollCount = 0;
             var safetyPoll = setInterval(function () {
                 toggleBrazilFields();
                 applyMasks();
-                checkInternationalPayment();
+                // toggleBrazilFields(); // Removed redundant call if already handled by loop
+                // applyMasks(); 
+                // checkInternationalPayment(); // Removed obsolete notice checks
                 if (++pollCount > 10) clearInterval(safetyPoll);
             }, 1000);
         });
@@ -353,31 +327,13 @@ function enfrute_checkout_js()
             margin-bottom: 24px;
         }
 
-        #enfrute-international-notice {
-            margin-bottom: 25px;
-            border-left: 4px solid #3CAC34;
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-        }
+
     </style>
     <?php
 }
 add_action('wp_footer', 'enfrute_checkout_js');
 
-/**
- * PHP fallback notice for international payments.
- */
-add_action('woocommerce_before_checkout_form', 'enfrute_international_payment_notice_php', 5);
-function enfrute_international_payment_notice_php() {
-    $customer_country = WC()->customer->get_billing_country();
-    if ($customer_country && $customer_country !== 'BR') {
-       wc_print_notice(
-           __('For international registrants, the international payment process will be implemented shortly. Please contact the organizing team for further instructions.', 'enfrute'),
-           'notice'
-       );
-    }
-}
+
 
 /**
  * Display CPF/CNPJ in order emails.
