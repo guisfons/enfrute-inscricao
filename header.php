@@ -13,7 +13,7 @@
     <header id="masthead" class="site-header">
         <div class="container sticky-header">
             <div class="site-branding">
-                <a href="<?php echo home_url(); ?>">
+                <a href="https://www.enfrute.com">
                     <img src="<?php echo get_template_directory_uri(); ?>/assets/images/logo.webp" alt="Logo">
                 </a>
             </div>

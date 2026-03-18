@@ -15,7 +15,7 @@ if (!current_user_can('manage_sciflow')) {
 get_header();
 
 $current_user = wp_get_current_user();
-$user_roles = (array) $current_user->roles;
+$user_roles = (array)$current_user->roles;
 
 // Specific Event Checks
 $is_semco_role = in_array('sciflow_semco_editor', $user_roles) || in_array('sciflow_semco_revisor', $user_roles);
@@ -25,7 +25,8 @@ $is_enfrute_role = in_array('sciflow_enfrute_editor', $user_roles) || in_array('
 $post_types = array('enfrute_trabalhos', 'semco_trabalhos');
 if ($is_semco_role && !$is_enfrute_role) {
     $post_types = array('semco_trabalhos');
-} elseif ($is_enfrute_role && !$is_semco_role) {
+}
+elseif ($is_enfrute_role && !$is_semco_role) {
     $post_types = array('enfrute_trabalhos');
 }
 
@@ -33,6 +34,7 @@ $args = array(
     'post_type' => $post_types,
     'posts_per_page' => -1,
     'post_status' => ($is_semco_role || $is_enfrute_role) ? 'publish' : 'any',
+    // 'author__not_in' => array(get_current_user_id()),
 );
 
 // Exclude Drafts, Pending Payment, and Approved with Considerations
@@ -40,16 +42,17 @@ $excluded_statuses = array('rascunho', 'aguardando_pagamento', 'aprovado_com_con
 
 if ($is_semco_role || $is_enfrute_role) {
     $args['meta_query'] = array(
-        array(
+            array(
             'key' => '_sciflow_status',
             'value' => $excluded_statuses,
             'compare' => 'NOT IN',
         ),
     );
-} else {
+}
+else {
     // For global admin, we also exclude the same irrelevant statuses to keep the panel clean
     $args['meta_query'] = array(
-        array(
+            array(
             'key' => '_sciflow_status',
             'value' => $excluded_statuses,
             'compare' => 'NOT IN',
@@ -88,8 +91,23 @@ $semco_numbers = array_flip($all_semco);
                 <h1 class="h2 fw-900 text-dark mb-1">Painel do Editor</h1>
                 <p class="text-muted mb-0">Gerenciamento global de todos os trabalhos submetidos.</p>
             </div>
-            <div class="d-flex gap-2">
-                <span class="badge bg-light text-dark border p-2 px-3 rounded-pill fw-bold">
+            <div class="d-flex gap-2 align-items-center">
+                <?php
+$submission_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-submission.php'));
+$submission_url = !empty($submission_page) ? get_permalink($submission_page[0]->ID) : home_url('/submissao');
+
+$my_works_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-submissions-list.php'));
+$my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : home_url('/meus-trabalhos');
+?>
+                <a href="<?php echo esc_url($submission_url); ?>"
+                    class="btn btn-outline-success rounded-pill fw-bold btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Submeter
+                </a>
+                <a href="<?php echo esc_url($my_works_url); ?>"
+                    class="btn btn-outline-primary rounded-pill fw-bold btn-sm">
+                    <i class="bi bi-card-list me-1"></i> Trabalhos
+                </a>
+                <span class="badge bg-light text-dark border p-2 px-3 rounded-pill fw-bold d-flex align-items-center">
                     <i class="bi bi-people me-1"></i>
                     <?php echo esc_html($query->found_posts); ?> Trabalhos
                 </span>
@@ -97,232 +115,239 @@ $semco_numbers = array_flip($all_semco);
         </div>
 
         <?php if ($query->have_posts()): ?>
-            <!-- Filters -->
-            <div class="row g-3 mb-4 sciflow-filters" id="sciflow-dashboard-filters">
-                <div class="col-12 col-md-3">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text"
-                            class="form-control border-start-0 ps-0 fw-medium shadow-none sciflow-filter-text"
-                            placeholder="Buscar (Título, Autor, Cultura, Área)...">
-                    </div>
-                </div>
-                <div class="col-12 col-md-3">
-                    <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-status">
-                        <option value="">Todos os Status</option>
-                        <option value="submetido">Submetido</option>
-                        <option value="em_avaliacao">Em Avaliação</option>
-                        <option value="aguardando_decisao">Decisão Pendente</option>
-                        <option value="em_correcao">Necessita Alterações</option>
-                        <option value="aprovado">Aprovado</option>
-                        <option value="reprovado">Reprovado</option>
-                        <option value="submetido_com_revisao">Submetido com Alterações</option>
-                        <option value="poster_enviado">Pôster Enviado</option>
-                        <option value="poster_em_correcao">Pôster em Correção</option>
-                        <option value="poster_reenviado">Pôster Reenviado</option>
-                        <option value="apto_publicacao">Apto para Publicação</option>
-                        <option value="poster_reprovado">Pôster Reprovado</option>
-                        <!-- <option value="apto_revisao">Apto para Revisão</option>
-                        <option value="apto_publicacao">Apto para Publicação</option> -->
-                    </select>
-                </div>
-                <div class="col-12 col-md-3">
-                    <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-cultura">
-                        <option value="">Todas as Culturas</option>
-                        <optgroup label="Frutas de clima temperado">
-                            <option value="Figo">Figo</option>
-                            <option value="Frutas de caroço">Frutas de caroço</option>
-                            <option value="Goiaba/Caqui">Goiaba/Caqui</option>
-                            <option value="Maçã/Pera">Maçã/Pera</option>
-                            <option value="Pequenas frutas">Pequenas frutas</option>
-                            <option value="Frutas nativas">Frutas nativas</option>
-                            <option value="Uva">Uva</option>
-                            <option value="Outras (Frutas)">Outras</option>
-                        </optgroup>
-                        <optgroup label="Olerícolas">
-                            <option value="Alho">Alho</option>
-                            <option value="Cebola">Cebola</option>
-                            <option value="Tomate">Tomate</option>
-                            <option value="Morango">Morango</option>
-                            <option value="Aipim/mandioca">Aipim/mandioca</option>
-                            <option value="Cenoura">Cenoura</option>
-                            <option value="Pimentão">Pimentão</option>
-                            <option value="Folhosas">Folhosas</option>
-                            <option value="Outras (Olerícolas)">Outras</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div class="col-12 col-md-3">
-                    <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-area">
-                        <option value="">Todas as Áreas</option>
-                        <option value="Biotecnologia/Genética e Melhoramento">Biotecnologia/Genética e Melhoramento</option>
-                        <option value="Botânica e Fisiologia">Botânica e Fisiologia</option>
-                        <option value="Colheita e Pós-Colheita">Colheita e Pós-Colheita</option>
-                        <option value="Fitossanidade">Fitossanidade</option>
-                        <option value="Economia/Estatística">Economia/Estatística</option>
-                        <option value="Fitotecnia">Fitotecnia</option>
-                        <option value="Irrigação">Irrigação</option>
-                        <option value="Processamento (Química e Bioquímica)">Processamento (Química e Bioquímica)</option>
-                        <option value="Propagação">Propagação</option>
-                        <option value="Sementes">Sementes</option>
-                        <option value="Solos e Nutrição de Plantas">Solos e Nutrição de Plantas</option>
-                        <option value="Outros">Outros</option>
-                    </select>
+        <!-- Filters -->
+        <div class="row g-3 mb-4 sciflow-filters" id="sciflow-dashboard-filters">
+            <div class="col-12 col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text"
+                        class="form-control border-start-0 ps-0 fw-medium shadow-none sciflow-filter-text"
+                        placeholder="Buscar (Título, Autor, Cultura, Área)...">
                 </div>
             </div>
+            <div class="col-12 col-md-3">
+                <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-status">
+                    <option value="">Todos os Status</option>
+                    <option value="submetido">Submetido</option>
+                    <option value="em_avaliacao">Em Avaliação</option>
+                    <option value="aguardando_decisao">Decisão Pendente</option>
+                    <option value="em_correcao">Necessita Alterações</option>
+                    <option value="aprovado">Aprovado</option>
+                    <option value="reprovado">Reprovado</option>
+                    <option value="submetido_com_revisao">Submetido com Alterações</option>
+                    <option value="poster_enviado">Pôster Enviado</option>
+                    <option value="poster_em_correcao">Pôster em Correção</option>
+                    <option value="poster_reenviado">Pôster Reenviado</option>
+                    <option value="apto_publicacao">Aprovado / Concluído</option>
+                    <option value="poster_reprovado">Pôster Reprovado</option>
+                    <!-- <option value="apto_revisao">Apto para Revisão</option>
+                        <option value="apto_publicacao">Aprovado / Concluído</option> -->
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-cultura">
+                    <option value="">Todas as Culturas</option>
+                    <optgroup label="Frutas de clima temperado">
+                        <option value="Figo">Figo</option>
+                        <option value="Frutas de caroço">Frutas de caroço</option>
+                        <option value="Goiaba/Caqui">Goiaba/Caqui</option>
+                        <option value="Maçã/Pera">Maçã/Pera</option>
+                        <option value="Pequenas frutas">Pequenas frutas</option>
+                        <option value="Frutas nativas">Frutas nativas</option>
+                        <option value="Uva">Uva</option>
+                        <option value="Outras (Frutas)">Outras</option>
+                    </optgroup>
+                    <optgroup label="Olerícolas">
+                        <option value="Alho">Alho</option>
+                        <option value="Cebola">Cebola</option>
+                        <option value="Tomate">Tomate</option>
+                        <option value="Morango">Morango</option>
+                        <option value="Aipim/mandioca">Aipim/mandioca</option>
+                        <option value="Cenoura">Cenoura</option>
+                        <option value="Pimentão">Pimentão</option>
+                        <option value="Folhosas">Folhosas</option>
+                        <option value="Outras (Olerícolas)">Outras</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <select class="form-select form-select-sm fw-medium text-secondary shadow-none sciflow-filter-area">
+                    <option value="">Todas as Áreas</option>
+                    <option value="Biotecnologia/Genética e Melhoramento">Biotecnologia/Genética e Melhoramento</option>
+                    <option value="Botânica e Fisiologia">Botânica e Fisiologia</option>
+                    <option value="Colheita e Pós-Colheita">Colheita e Pós-Colheita</option>
+                    <option value="Fitossanidade">Fitossanidade</option>
+                    <option value="Economia/Estatística">Economia/Estatística</option>
+                    <option value="Fitotecnia">Fitotecnia</option>
+                    <option value="Irrigação">Irrigação</option>
+                    <option value="Processamento (Química e Bioquímica)">Processamento (Química e Bioquímica)</option>
+                    <option value="Propagação">Propagação</option>
+                    <option value="Sementes">Sementes</option>
+                    <option value="Solos e Nutrição de Plantas">Solos e Nutrição de Plantas</option>
+                    <option value="Outros">Outros</option>
+                </select>
+            </div>
+        </div>
 
-            <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 sciflow-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">ID</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Autor</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Título do Trabalho</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Evento</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Status SciFlow</th>
-                                <th class="pe-4 py-3 text-uppercase fs-xs fw-bold text-muted text-end">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($query->have_posts()):
-                                $query->the_post();
-                                $post_id = get_the_ID();
-                                $author_id = get_the_author_meta('ID');
-                                $author_name = get_the_author();
-                                $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-                                $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+        <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 sciflow-table">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">ID</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Autor</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Título do Trabalho</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Evento</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Status SciFlow</th>
+                            <th class="pe-4 py-3 text-uppercase fs-xs fw-bold text-muted text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($query->have_posts()):
+        $query->the_post();
+        $post_id = get_the_ID();
+        $author_id = get_the_author_meta('ID');
+        $author_name = get_the_author();
+        $event_slug = get_post_meta($post_id, '_sciflow_event', true);
+        $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
 
-                                // SciFlow Specific Status
-                                $sciflow_status = get_post_meta($post_id, '_sciflow_status', true);
-                                if (!$sciflow_status)
-                                    $sciflow_status = 'rascunho';
+        // SciFlow Specific Status
+        $sciflow_status = get_post_meta($post_id, '_sciflow_status', true);
+        if (!$sciflow_status)
+            $sciflow_status = 'rascunho';
 
-                                $status_labels = array(
-                                    'rascunho' => 'Rascunho',
-                                    'aguardando_pagamento' => 'Pgto. Pendente',
-                                    'submetido' => 'Submetido',
-                                    'em_avaliacao' => 'Em Avaliação',
-                                    'aguardando_decisao' => 'Decisão Pendente',
-                                    'em_correcao' => 'Necessita Alterações',
-                                    'aprovado' => 'Aprovado / Aguardando Pôster',
-                                    'reprovado' => 'Reprovado',
-                                    'aprovado_com_consideracoes' => 'Necessita Alterações',
-                                    'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
-                                    'poster_enviado' => 'Pôster Enviado',
-                                    'poster_em_correcao' => 'Pôster em Correção',
-                                    'poster_reenviado' => 'Pôster Reenviado',
-                                    'apto_revisao' => 'Apto para Revisão',
-                                    'apto_publicacao' => 'Apto para Publicação',
-                                    'poster_reprovado' => 'Pôster Reprovado',
-                                );
+        $status_labels = array(
+            'rascunho' => 'Rascunho',
+            'aguardando_pagamento' => 'Pgto. Pendente',
+            'submetido' => 'Submetido',
+            'em_avaliacao' => 'Em Avaliação',
+            'aguardando_decisao' => 'Decisão Pendente',
+            'em_correcao' => 'Necessita Alterações',
+            'aprovado' => 'Aprovado / Aguardando Pôster',
+            'reprovado' => 'Reprovado',
+            'aprovado_com_consideracoes' => 'Necessita Alterações',
+            'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
+            'poster_enviado' => 'Pôster Enviado',
+            'poster_em_correcao' => 'Pôster em Correção',
+            'poster_reenviado' => 'Pôster Reenviado',
+            'apto_revisao' => 'Apto para Revisão',
+            'apto_publicacao' => 'Aprovado / Concluído',
+            'poster_reprovado' => 'Pôster Reprovado',
+        );
 
-                                $badge_classes = array(
-                                    'rascunho' => 'sciflow-badge--draft',
-                                    'aguardando_pagamento' => 'bg-warning text-dark',
-                                    'submetido' => 'bg-info text-white',
-                                    'em_avaliacao' => 'sciflow-badge--pending',
-                                    'aguardando_decisao' => 'bg-primary text-white',
-                                    'em_correcao' => 'bg-secondary text-white',
-                                    'aprovado' => 'sciflow-badge--published',
-                                    'reprovado' => 'bg-danger text-white',
-                                    'aprovado_com_consideracoes' => 'bg-info text-white',
-                                    'submetido_com_revisao' => 'bg-info text-white',
-                                    'poster_enviado' => 'bg-info text-white',
-                                    'poster_em_correcao' => 'bg-warning text-dark',
-                                    'poster_reenviado' => 'bg-info text-white',
-                                    'apto_revisao' => 'bg-info text-white',
-                                    'apto_publicacao' => 'bg-success text-white',
-                                    'poster_reprovado' => 'bg-danger text-white',
-                                );
+        $badge_classes = array(
+            'rascunho' => 'sciflow-badge--draft',
+            'aguardando_pagamento' => 'bg-warning text-dark',
+            'submetido' => 'bg-info text-white',
+            'em_avaliacao' => 'sciflow-badge--pending',
+            'aguardando_decisao' => 'bg-primary text-white',
+            'em_correcao' => 'bg-secondary text-white',
+            'aprovado' => 'sciflow-badge--published',
+            'reprovado' => 'bg-danger text-white',
+            'aprovado_com_consideracoes' => 'bg-info text-white',
+            'submetido_com_revisao' => 'bg-info text-white',
+            'poster_enviado' => 'bg-info text-white',
+            'poster_em_correcao' => 'bg-warning text-dark',
+            'poster_reenviado' => 'bg-info text-white',
+            'apto_revisao' => 'bg-info text-white',
+            'apto_publicacao' => 'bg-success text-white',
+            'poster_reprovado' => 'bg-danger text-white',
+        );
 
-                                $cultura = get_post_meta($post_id, '_sciflow_cultura', true);
-                                $area = get_post_meta($post_id, '_sciflow_knowledge_area', true);
-                                $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
-                                $badge_class = isset($badge_classes[$sciflow_status]) ? $badge_classes[$sciflow_status] : 'bg-light';
+        $cultura = get_post_meta($post_id, '_sciflow_cultura', true);
+        $area = get_post_meta($post_id, '_sciflow_knowledge_area', true);
+        $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
+        $badge_class = isset($badge_classes[$sciflow_status]) ? $badge_classes[$sciflow_status] : 'bg-light';
 
-                                $is_editor = current_user_can('manage_sciflow');
-                                $display_author_name = $author_name;
-                                if (!$is_editor && !current_user_can('administrator')) {
-                                    $display_author_name = ''; // Hide from search if blind review
-                                }
-                                ?>
-                                <tr class="sciflow-dashboard-row"
-                                    data-search="<?php echo esc_attr(strtolower(get_the_title() . ' ' . $display_author_name . ' ' . $cultura . ' ' . $area)); ?>"
-                                    data-status="<?php echo esc_attr($sciflow_status); ?>"
-                                    data-cultura="<?php echo esc_attr($cultura); ?>" data-area="<?php echo esc_attr($area); ?>">
-                                    <td class="ps-4">
-                                        <span class="text-muted small">#<?php
-                                        $visual_id = SciFlow_Status_Manager::get_visual_id($post_id);
-                                        echo esc_html(str_pad($visual_id, 2, '0', STR_PAD_LEFT));
-                                        ?></span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-2"
-                                                style="width: 32px; height: 32px;">
-                                                <i class="bi bi-person text-muted"></i>
-                                            </div>
-                                            <span class="small fw-semibold">
-                                                <?php
-                                                $is_editor = current_user_can('manage_sciflow');
-                                                if (!$is_editor && !current_user_can('administrator')): ?>
-                                                    <i class="opacity-50 italic">Ocultado (Blind Review)</i>
-                                                <?php else: ?>
-                                                    <?php echo esc_html($author_name); ?>
-                                                <?php endif; ?>
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="sciflow-table-title fw-bold text-dark text-truncate"
-                                            style="max-width: 300px;">
-                                            <?php the_title(); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <i
-                                                class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
-                                            <span class="small fw-semibold">
-                                                <?php echo esc_html($event_name); ?>
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="sciflow-table-badge <?php echo $badge_class; ?>">
-                                            <?php echo esc_html($status_label); ?>
-                                        </span>
-                                    </td>
-                                    <td class="pe-4 text-end">
+        $is_editor = current_user_can('manage_sciflow');
+        $display_author_name = $author_name;
+        if (!$is_editor && !current_user_can('administrator')) {
+            $display_author_name = ''; // Hide from search if blind review
+        }
+?>
+                        <tr class="sciflow-dashboard-row"
+                            data-search="<?php echo esc_attr(strtolower(get_the_title() . ' ' . $display_author_name . ' ' . $cultura . ' ' . $area)); ?>"
+                            data-status="<?php echo esc_attr($sciflow_status); ?>"
+                            data-cultura="<?php echo esc_attr($cultura); ?>" data-area="<?php echo esc_attr($area); ?>">
+                            <td class="ps-4">
+                                <span class="text-muted small">#
+                                    <?php
+        $visual_id = SciFlow_Status_Manager::get_visual_id($post_id);
+        echo esc_html(str_pad($visual_id, 4, '0', STR_PAD_LEFT));
+?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-2"
+                                        style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </div>
+                                    <span class="small fw-semibold">
                                         <?php
-                                        $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-                                        $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo'); // Fallback slug
-                                        $view_url = add_query_arg('article_id', $post_id, $detail_url);
-                                        ?>
-                                        <a href="<?php echo esc_url($view_url); ?>"
-                                            class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
-                                            <i class="bi bi-eye me-1"></i> Ver
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endwhile;
-                            wp_reset_postdata(); ?>
-                        </tbody>
-                    </table>
-                </div>
+        $is_editor = current_user_can('manage_sciflow');
+        if (!$is_editor && !current_user_can('administrator')): ?>
+                                        <i class="opacity-50 italic">Ocultado (Blind Review)</i>
+                                        <?php
+        else: ?>
+                                        <?php echo esc_html($author_name); ?>
+                                        <?php
+        endif; ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="sciflow-table-title fw-bold text-dark text-truncate"
+                                    style="max-width: 300px;">
+                                    <?php the_title(); ?>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i
+                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                    <span class="small fw-semibold">
+                                        <?php echo esc_html($event_name); ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="sciflow-table-badge <?php echo $badge_class; ?>">
+                                    <?php echo esc_html($status_label); ?>
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <?php
+        $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
+        $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo'); // Fallback slug
+        $view_url = add_query_arg('article_id', $post_id, $detail_url);
+?>
+                                <a href="<?php echo esc_url($view_url); ?>"
+                                    class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
+                                    <i class="bi bi-eye me-1"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        <?php
+    endwhile;
+    wp_reset_postdata(); ?>
+                    </tbody>
+                </table>
             </div>
-        <?php else: ?>
-            <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
-                <div class="sciflow-empty-icon mb-4">
-                    <i class="bi bi-folder2-open display-1 text-light"></i>
-                </div>
-                <h2 class="h3 fw-bold mb-3">Nenhum trabalho encontrado</h2>
-                <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
-                    Ainda não há trabalhos submetidos no sistema para os eventos Enfrute e Semco.
-                </p>
+        </div>
+        <?php
+else: ?>
+        <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
+            <div class="sciflow-empty-icon mb-4">
+                <i class="bi bi-folder2-open display-1 text-light"></i>
             </div>
-        <?php endif; ?>
+            <h2 class="h3 fw-bold mb-3">Nenhum trabalho encontrado</h2>
+            <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
+                Ainda não há trabalhos submetidos no sistema para os eventos Enfrute e Semco.
+            </p>
+        </div>
+        <?php
+endif; ?>
     </div>
 </main>
 

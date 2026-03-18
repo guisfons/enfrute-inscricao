@@ -30,33 +30,14 @@ $args = array(
 
 $query = new WP_Query($args);
 
-// Calculate global order of submission for IDs
-$all_enfrute = get_posts(array(
-    'post_type' => 'enfrute_trabalhos',
-    'posts_per_page' => -1,
-    'post_status' => 'any',
-    'orderby' => 'date',
-    'order' => 'ASC',
-    'fields' => 'ids',
-));
-$enfrute_numbers = array_flip($all_enfrute);
 
-$all_semco = get_posts(array(
-    'post_type' => 'semco_trabalhos',
-    'posts_per_page' => -1,
-    'post_status' => 'any',
-    'orderby' => 'date',
-    'order' => 'ASC',
-    'fields' => 'ids',
-));
-$semco_numbers = array_flip($all_semco);
 ?>
 
 <main class="sciflow-submissions-list py-5">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h2 mb-0">
-                <?php esc_html_e('Meus Trabalhos', 'enfrute'); ?>
+                <?php esc_html_e('Meus Resumos', 'enfrute'); ?>
             </h1>
             <a href="<?php echo esc_url(home_url('/submissao')); ?>" class="sciflow-btn sciflow-btn--primary">
                 <?php esc_html_e('Nova Submissão', 'enfrute'); ?>
@@ -64,144 +45,149 @@ $semco_numbers = array_flip($all_semco);
         </div>
 
         <?php if ($query->have_posts()): ?>
-            <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 sciflow-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">ID</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Título do Trabalho</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Evento</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted text-center">Data</th>
-                                <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Status</th>
-                                <th class="pe-4 py-3 text-uppercase fs-xs fw-bold text-muted text-end">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($query->have_posts()):
-                                $query->the_post();
-                                $post_id = get_the_ID();
-                                $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-                                $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
-                                $post_status = get_post_status();
-                                $date = get_the_date('d/m/Y');
+        <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 sciflow-table">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">ID</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Título do Trabalho</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Evento</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted text-center">Data</th>
+                            <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Status</th>
+                            <th class="pe-4 py-3 text-uppercase fs-xs fw-bold text-muted text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($query->have_posts()):
+        $query->the_post();
+        $post_id = get_the_ID();
+        $event_slug = get_post_meta($post_id, '_sciflow_event', true);
+        $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+        $post_status = get_post_status();
+        $date = get_the_date('d/m/Y');
 
-                                $sciflow_status = get_post_meta($post_id, '_sciflow_status', true) ?: 'rascunho';
+        $sciflow_status = get_post_meta($post_id, '_sciflow_status', true) ?: 'rascunho';
 
-                                $status_labels = array(
-                                    'rascunho' => 'Rascunho',
-                                    'aguardando_pagamento' => 'Aguardando Pagamento',
-                                    'submetido' => 'Submetido',
-                                    'em_avaliacao' => 'Em Avaliação',
-                                    'aguardando_decisao' => 'Aguardando Decisão',
-                                    'em_correcao' => 'Alterações Solicitadas',
-                                    'aprovado' => 'Aprovado / Aguardando Pôster',
-                                    'reprovado' => 'Reprovado',
-                                    'aprovado_com_consideracoes' => 'Necessita Alterações',
-                                    'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
-                                    'poster_enviado' => 'Pôster Enviado',
-                                    'poster_em_correcao' => 'Pôster em Correção',
-                                    'poster_reenviado' => 'Pôster Reenviado',
-                                    'apto_publicacao' => 'Apto para Publicação',
-                                    'poster_reprovado' => 'Pôster Reprovado',
-                                    'confirmado' => 'Confirmado',
-                                );
+        $status_labels = array(
+            'rascunho' => 'Rascunho',
+            'aguardando_pagamento' => 'Aguardando Pagamento',
+            'submetido' => 'Submetido',
+            'em_avaliacao' => 'Em Avaliação',
+            'aguardando_decisao' => 'Aguardando Decisão',
+            'em_correcao' => 'Alterações Solicitadas',
+            'aprovado' => 'Aprovado / Aguardando Pôster',
+            'reprovado' => 'Reprovado',
+            'aprovado_com_consideracoes' => 'Necessita Alterações',
+            'submetido_com_revisao' => 'SUBMETIDO COM ALTERAÇÕES',
+            'poster_enviado' => 'Pôster Enviado',
+            'poster_em_correcao' => 'Pôster em Correção',
+            'poster_reenviado' => 'Pôster Reenviado',
+            'apto_publicacao' => 'Aprovado / Concluído',
+            'poster_reprovado' => 'Pôster Reprovado',
+            'confirmado' => 'Confirmado',
+        );
 
-                                $badge_classes = array(
-                                    'rascunho' => 'sciflow-badge--draft',
-                                    'aguardando_pagamento' => 'bg-warning text-dark',
-                                    'submetido' => 'bg-info text-white',
-                                    'em_avaliacao' => 'bg-primary text-white',
-                                    'aguardando_decisao' => 'bg-primary text-white',
-                                    'em_correcao' => 'bg-secondary text-white',
-                                    'aprovado' => 'sciflow-badge--published',
-                                    'reprovado' => 'bg-danger text-white',
-                                    'aprovado_com_consideracoes' => 'bg-info text-white',
-                                    'submetido_com_revisao' => 'bg-info text-white',
-                                    'poster_enviado' => 'bg-info text-white',
-                                    'poster_em_correcao' => 'bg-warning text-dark',
-                                    'poster_reenviado' => 'bg-info text-white',
-                                    'apto_publicacao' => 'sciflow-badge--published',
-                                    'poster_reprovado' => 'bg-danger text-white',
-                                );
+        $badge_classes = array(
+            'rascunho' => 'sciflow-badge--draft',
+            'aguardando_pagamento' => 'bg-warning text-dark',
+            'submetido' => 'bg-info text-white',
+            'em_avaliacao' => 'bg-primary text-white',
+            'aguardando_decisao' => 'bg-primary text-white',
+            'em_correcao' => 'bg-secondary text-white',
+            'aprovado' => 'sciflow-badge--published',
+            'reprovado' => 'bg-danger text-white',
+            'aprovado_com_consideracoes' => 'bg-info text-white',
+            'submetido_com_revisao' => 'bg-info text-white',
+            'poster_enviado' => 'bg-info text-white',
+            'poster_em_correcao' => 'bg-warning text-dark',
+            'poster_reenviado' => 'bg-info text-white',
+            'apto_publicacao' => 'sciflow-badge--published',
+            'poster_reprovado' => 'bg-danger text-white',
+        );
 
-                                $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
-                                $badge_class = isset($badge_classes[$sciflow_status]) ? $badge_classes[$sciflow_status] : 'bg-light';
-                                ?>
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="text-muted small">#<?php
-                                        $event_type_slug = get_post_type($post_id);
-                                        $number = $post_id;
-                                        if ($event_type_slug === 'enfrute_trabalhos' && isset($enfrute_numbers[$post_id])) {
-                                            $number = $enfrute_numbers[$post_id] + 1;
-                                        } elseif ($event_type_slug === 'semco_trabalhos' && isset($semco_numbers[$post_id])) {
-                                            $number = $semco_numbers[$post_id] + 1;
-                                        }
-                                        echo esc_html(str_pad($number, 4, '0', STR_PAD_LEFT));
-                                        ?></span>
-                                    </td>
-                                    <td>
-                                        <div class="sciflow-table-title fw-bold text-dark">
-                                            <?php the_title(); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <i
-                                                class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
-                                            <span class="small fw-semibold"><?php echo esc_html($event_name); ?></span>
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="small text-muted"><?php echo esc_html($date); ?></span>
-                                    </td>
-                                    <td>
-                                        <span class="sciflow-table-badge <?php echo $badge_class; ?>">
-                                            <?php echo esc_html($status_label); ?>
-                                        </span>
-                                    </td>
-                                    <td class="pe-4 text-end">
-                                        <?php if (in_array($sciflow_status, array('rascunho', 'em_correcao', 'aguardando_pagamento', 'aprovado_com_consideracoes', 'reprovado'), true)): ?>
-                                            <a href="<?php echo esc_url(add_query_arg('edit_id', $post_id, home_url('/submissao'))); ?>"
-                                                class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
-                                                <i class="bi bi-pencil-square me-1"></i>
-                                                <?php echo in_array($sciflow_status, array('em_correcao', 'aprovado_com_consideracoes', 'reprovado')) ? 'Alterar' : 'Ver/Editar'; ?>
-                                            </a>
-                                        <?php else: ?>
-                                            <?php
-                                            $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-                                            $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo');
-                                            $view_url = add_query_arg('article_id', $post_id, $detail_url);
-                                            ?>
-                                            <a href="<?php echo esc_url($view_url); ?>"
-                                                class="btn btn-sm btn-light rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-eye me-1"></i> Detalhes
-                                            </a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile;
-                            wp_reset_postdata(); ?>
-                        </tbody>
-                    </table>
-                </div>
+        $status_label = isset($status_labels[$sciflow_status]) ? $status_labels[$sciflow_status] : $sciflow_status;
+        $badge_class = isset($badge_classes[$sciflow_status]) ? $badge_classes[$sciflow_status] : 'bg-light';
+?>
+                        <tr>
+                            <td class="ps-4">
+                                <span class="text-muted small">#
+                                    <?php
+        $visual_id = SciFlow_Status_Manager::get_visual_id($post_id);
+        echo esc_html(str_pad($visual_id, 4, '0', STR_PAD_LEFT));
+?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="sciflow-table-title fw-bold text-dark">
+                                    <?php the_title(); ?>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i
+                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                    <span class="small fw-semibold">
+                                        <?php echo esc_html($event_name); ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="small text-muted">
+                                    <?php echo esc_html($date); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="sciflow-table-badge <?php echo $badge_class; ?>">
+                                    <?php echo esc_html($status_label); ?>
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <?php if (in_array($sciflow_status, array('rascunho', 'em_correcao', 'aguardando_pagamento', 'aprovado_com_consideracoes', 'reprovado'), true)): ?>
+                                <a href="<?php echo esc_url(add_query_arg('edit_id', $post_id, home_url('/submissao'))); ?>"
+                                    class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
+                                    <i class="bi bi-pencil-square me-1"></i>
+                                    <?php echo in_array($sciflow_status, array('em_correcao', 'aprovado_com_consideracoes', 'reprovado')) ? 'Alterar' : 'Ver/Editar'; ?>
+                                </a>
+                                <?php
+        else: ?>
+                                <?php
+            $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
+            $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo');
+            $view_url = add_query_arg('article_id', $post_id, $detail_url);
+?>
+                                <a href="<?php echo esc_url($view_url); ?>"
+                                    class="btn btn-sm btn-light rounded-pill px-3 fw-bold">
+                                    <i class="bi bi-eye me-1"></i> Detalhes
+                                </a>
+                                <?php
+        endif; ?>
+                            </td>
+                        </tr>
+                        <?php
+    endwhile;
+    wp_reset_postdata(); ?>
+                    </tbody>
+                </table>
             </div>
-        <?php else: ?>
-            <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
-                <div class="sciflow-empty-icon mb-4">
-                    <i class="bi bi-file-earmark-spreadsheet display-1 text-light"></i>
-                </div>
-                <h2 class="h3 fw-bold mb-3">Sua lista está vazia</h2>
-                <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
-                    Você ainda não iniciou a submissão de nenhum trabalho científico.
-                </p>
-                <a href="<?php echo esc_url(home_url('/submissao')); ?>"
-                    class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                    Nova Submissão
-                </a>
+        </div>
+        <?php
+else: ?>
+        <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
+            <div class="sciflow-empty-icon mb-4">
+                <i class="bi bi-file-earmark-spreadsheet display-1 text-light"></i>
             </div>
-        <?php endif; ?>
+            <h2 class="h3 fw-bold mb-3">Sua lista está vazia</h2>
+            <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
+                Você ainda não iniciou a submissão de nenhum trabalho científico.
+            </p>
+            <a href="<?php echo esc_url(home_url('/submissao')); ?>"
+                class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                Nova Submissão
+            </a>
+        </div>
+        <?php
+endif; ?>
     </div>
 </main>
 

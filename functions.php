@@ -307,7 +307,7 @@ function enfrute_checkout_js()
             function checkInternationalPayment() {
                 var country = $('#billing_country, [name="billing_country"], .wc-block-components-address-form__country select').val();
                 if (country && country !== 'BR') {
-                    var noticeText = 'Para inscritos estrangeiros, o fluxo de pagamento internacional será implementado em breve. Por favor, entre em contato com a equipe organizadora para orientações.';
+                    var noticeText = 'For international registrants, the international payment process will be implemented shortly. Please contact the organizing team for further instructions.';
                     
                     // Main notice at top
                     if (!$('#enfrute-international-notice').length) {
@@ -373,7 +373,7 @@ function enfrute_international_payment_notice_php() {
     $customer_country = WC()->customer->get_billing_country();
     if ($customer_country && $customer_country !== 'BR') {
        wc_print_notice(
-           __('Para inscritos estrangeiros, o fluxo de pagamento internacional será implementado em breve. Por favor, entre em contato com a equipe organizadora para orientações.', 'enfrute'),
+           __('For international registrants, the international payment process will be implemented shortly. Please contact the organizing team for further instructions.', 'enfrute'),
            'notice'
        );
     }
@@ -457,7 +457,7 @@ function enfrute_user_has_paid_registration($user_id = null)
     // Admins and editors always have access
     $user = get_userdata($user_id);
     if ($user) {
-        $bypass_roles = array('administrator', 'sciflow_enfrute_editor', 'sciflow_semco_editor');
+        $bypass_roles = array('administrator', 'sciflow_editor', 'sciflow_enfrute_editor', 'sciflow_semco_editor', 'sciflow_review', 'sciflow_revisor', 'sciflow_enfrute_revisor', 'sciflow_semco_revisor');
         foreach ($bypass_roles as $role) {
             if (in_array($role, (array) $user->roles, true)) {
                 return true;
@@ -509,50 +509,6 @@ function enfrute_get_inscription_home_url()
     return home_url('/inscricao');
 }
 
-/**
- * Helper to get the correct dashboard URL for a user based on their role.
- */
-function enfrute_get_dashboard_redirect_url($user, $default_redirect)
-{
-    if (isset($user->roles) && is_array($user->roles)) {
-        $settings = get_option('sciflow_settings', array());
-        $roles = $user->roles;
-
-        if (in_array('administrator', $roles) || in_array('sciflow_enfrute_editor', $roles) || in_array('sciflow_semco_editor', $roles)) {
-            if (!empty($settings['editor_dashboard_url'])) {
-                return $settings['editor_dashboard_url'];
-            }
-        } elseif (in_array('sciflow_enfrute_revisor', $roles) || in_array('sciflow_semco_revisor', $roles)) {
-            if (!empty($settings['reviewer_dashboard_url'])) {
-                return $settings['reviewer_dashboard_url'];
-            }
-        } elseif (in_array('sciflow_speaker', $roles) || in_array('sciflow_inscrito', $roles)) {
-            if (!empty($settings['dashboard_url'])) {
-                return $settings['dashboard_url'];
-            }
-        }
-    }
-
-    return $default_redirect;
-}
-
-/**
- * Handle standard WP login redirect.
- */
-add_filter('login_redirect', 'enfrute_wp_login_redirect', 10, 3);
-function enfrute_wp_login_redirect($redirect_to, $request, $user)
-{
-    return enfrute_get_dashboard_redirect_url($user, $redirect_to);
-}
-
-/**
- * Handle WooCommerce login redirect.
- */
-add_filter('woocommerce_login_redirect', 'enfrute_woo_login_redirect', 10, 2);
-function enfrute_woo_login_redirect($redirect_to, $user)
-{
-    return enfrute_get_dashboard_redirect_url($user, $redirect_to);
-}
 
 /**
  * Filter available payment gateways based on backorder status.
@@ -577,15 +533,21 @@ function enfrute_restrict_gateways_for_backorder($available_gateways)
         }
     }
 
-    // 1. If explicitly foreign country, hide Sicredi/PayGo
+    // 1. Handling for international vs domestic
     if (!empty($customer_country) && strtoupper($customer_country) !== 'BR') {
-        unset($available_gateways['sicredi']);
-        unset($available_gateways['paygo']);
-        unset($available_gateways['sicredi_pix']);
+        // International: Only allow PayPal
+        foreach ($available_gateways as $gateway_id => $gateway) {
+            if ($gateway_id !== 'paypal') {
+                unset($available_gateways[$gateway_id]);
+            }
+        }
+    } else {
+        // Brazil: Hide PayPal
+        unset($available_gateways['paypal']);
     }
 
-    // 2. If backorder, only keep "bacs" (Solicitar Reserva)
-    if ($has_backorder) {
+    // 2. If backorder and Brazil, only keep "bacs" (Solicitar Reserva)
+    if ($has_backorder && (empty($customer_country) || strtoupper($customer_country) === 'BR')) {
         $new_gateways = array();
         if (isset($available_gateways['bacs'])) {
             $new_gateways['bacs'] = $available_gateways['bacs'];
@@ -756,11 +718,17 @@ function enfrute_bacs_status_for_backorders($status, $order)
 
 /**
  * Also intercept Sicredi/PayGo gateways to keep on-hold if somehow they are used.
+ * Bypasses for admins doing manual status changes in the backend.
  */
 add_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99, 4);
 function enfrute_revert_backorder_status_if_completed($order_id, $old_status, $new_status, $order)
 {
-    // If an order with backorder items tries to go to processing or completed, revert it.
+    // Allow manual status changes from the WP Admin panel by Shop Managers/Admins
+    if (is_admin() && current_user_can('edit_shop_orders')) {
+        return;
+    }
+
+    // If an order with backorder items tries to go to processing or completed via frontend/gateway, revert it.
     if (in_array($new_status, array('processing', 'completed'), true) && enfrute_order_has_backorder($order)) {
         // Remove action temporarily to avoid infinite loop
         remove_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99);
@@ -785,3 +753,33 @@ function enfrute_backorder_thankyou_notice($order_id)
     echo esc_html__('Seu pedido foi enviado para análise manual pela nossa equipe. Você receberá um e-mail assim que sua inscrição for aprovada. Não é necessário realizar nenhum pagamento agora.', 'enfrute');
     echo '</div>';
 }
+
+/**
+ * Remove "Informação Adicional" tab from single product page.
+ */
+add_filter('woocommerce_product_tabs', 'enfrute_remove_product_tabs', 98);
+function enfrute_remove_product_tabs($tabs)
+{
+    unset($tabs['additional_information']);
+    return $tabs;
+}
+
+/**
+ * Remove product meta (SKU, categories, tags) from single product page.
+ */
+add_action('init', 'enfrute_remove_product_meta');
+function enfrute_remove_product_meta()
+{
+    remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40);
+}
+
+/**
+ * Remove PayPal Smart Buttons from Single Product Page.
+ */
+add_action('init', 'enfrute_remove_paypal_buttons_from_product_page');
+function enfrute_remove_paypal_buttons_from_product_page() {
+    if (class_exists('WC_Gateway_Paypal')) {
+        remove_action('woocommerce_after_add_to_cart_form', array(WC_Gateway_Paypal::get_instance(), 'render_buttons_container'));
+    }
+}
+
