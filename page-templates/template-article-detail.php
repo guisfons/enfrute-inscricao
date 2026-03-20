@@ -261,7 +261,7 @@ if (!empty($knowledge_area)): ?>
                         <?php
 endif; ?>
 
-                        <?php if (!empty($user_roles) && !in_array('sciflow_inscrito', $user_roles)): // Display note field even for authors if they are editors ?>
+                        <?php if ($is_editor || current_user_can('administrator')): // Only editors/admins see who the reviewer is ?>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted small">Revisor Atribuído</span>
                             <span class="small fw-bold text-end">

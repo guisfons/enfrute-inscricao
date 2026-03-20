@@ -478,6 +478,22 @@ function enfrute_restrict_gateways_for_backorder($available_gateways)
     }
 
     $customer_country = WC()->customer ? WC()->customer->get_billing_country() : '';
+
+    // Fallback for AJAX update_checkout
+    if (empty($customer_country)) {
+        if (isset($_POST['billing_country'])) {
+            $customer_country = sanitize_text_field($_POST['billing_country']);
+        } elseif (isset($_POST['post_data'])) {
+            parse_str($_POST['post_data'], $post_data_parsed);
+            if (isset($post_data_parsed['billing_country'])) {
+                $customer_country = sanitize_text_field($post_data_parsed['billing_country']);
+            }
+        }
+    }
+
+    $is_brazil = (strtoupper($customer_country) === 'BR');
+    $is_international = (!empty($customer_country) && !$is_brazil);
+
     $has_backorder = false;
     if (WC()->cart) {
         foreach (WC()->cart->get_cart() as $cart_item) {
@@ -489,24 +505,35 @@ function enfrute_restrict_gateways_for_backorder($available_gateways)
         }
     }
 
-    // 1. Handling for international vs domestic
-    $paypal_gateways = array('paypal', 'ppcp-gateway');
-    if (!empty($customer_country) && strtoupper($customer_country) !== 'BR') {
-        // International: Only allow PayPal
-        foreach ($available_gateways as $gateway_id => $gateway) {
-            if (!in_array($gateway_id, $paypal_gateways)) {
-                unset($available_gateways[$gateway_id]);
-            }
+    // Capture PayPal IDs present in the list to avoid unsetting everything if PayPal is missing
+    $paypal_ids = array();
+    foreach ($available_gateways as $id => $gateway) {
+        $is_paypal = (stripos($id, 'paypal') !== false || stripos($id, 'ppcp') !== false || stripos(get_class($gateway), 'paypal') !== false);
+        if ($is_paypal) {
+            $paypal_ids[] = $id;
         }
-    } else {
-        // Brazil: Hide PayPal
-        foreach ($paypal_gateways as $paypal_id) {
-            unset($available_gateways[$paypal_id]);
+    }
+
+    if ($is_brazil) {
+        // Brazil: Hide all PayPal gateways
+        foreach ($paypal_ids as $p_id) {
+            unset($available_gateways[$p_id]);
+        }
+    } elseif ($is_international) {
+        // International: If we have PayPal, show ONLY PayPal. 
+        // If PayPal is somehow missing from $available_gateways, we DON'T unset other things 
+        // to avoid a "no payment methods" error, BUT we prioritize PayPal if it exists.
+        if (!empty($paypal_ids)) {
+            $new_gateways = array();
+            foreach ($paypal_ids as $p_id) {
+                $new_gateways[$p_id] = $available_gateways[$p_id];
+            }
+            $available_gateways = $new_gateways;
         }
     }
 
     // 2. If backorder and Brazil, only keep "bacs" (Solicitar Reserva)
-    if ($has_backorder && (empty($customer_country) || strtoupper($customer_country) === 'BR')) {
+    if ($has_backorder && $is_brazil) {
         $new_gateways = array();
         if (isset($available_gateways['bacs'])) {
             $new_gateways['bacs'] = $available_gateways['bacs'];
