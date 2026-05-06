@@ -114,6 +114,23 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
             </div>
         </div>
 
+        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active rounded-pill fw-bold" id="pills-papers-tab" data-bs-toggle="pill" data-bs-target="#pills-papers" type="button" role="tab" aria-controls="pills-papers" aria-selected="true">
+                    Trabalhos Científicos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold" id="pills-lectures-tab" data-bs-toggle="pill" data-bs-target="#pills-lectures" type="button" role="tab" aria-controls="pills-lectures" aria-selected="false">
+                    Palestras
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+            <!-- Scientific Papers Tab -->
+            <div class="tab-pane fade show active" id="pills-papers" role="tabpanel" aria-labelledby="pills-papers-tab">
+
         <?php if ($query->have_posts()): ?>
         <!-- Filters -->
         <div class="row g-3 mb-4 sciflow-filters" id="sciflow-dashboard-filters">
@@ -335,19 +352,116 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                 </table>
             </div>
         </div>
-        <?php
-else: ?>
-        <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
-            <div class="sciflow-empty-icon mb-4">
-                <i class="bi bi-folder2-open display-1 text-light"></i>
-            </div>
-            <h2 class="h3 fw-bold mb-3">Nenhum trabalho encontrado</h2>
-            <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
-                Ainda não há trabalhos submetidos no sistema para os eventos Enfrute e Semco.
-            </p>
-        </div>
-        <?php
-endif; ?>
+                <?php else: ?>
+                    <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
+                        <div class="sciflow-empty-icon mb-4">
+                            <i class="bi bi-folder2-open display-1 text-light"></i>
+                        </div>
+                        <h2 class="h3 fw-bold mb-3">Nenhum trabalho encontrado</h2>
+                        <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
+                            Ainda não há trabalhos submetidos no sistema para os eventos Enfrute e Semco.
+                        </p>
+                    </div>
+                <?php endif; ?>
+            </div> <!-- End Papers Tab -->
+
+            <!-- Palestras Tab -->
+            <div class="tab-pane fade" id="pills-lectures" role="tabpanel" aria-labelledby="pills-lectures-tab">
+                <?php
+                $lecture_args = array(
+                    'post_type' => 'sciflow_palestra',
+                    'posts_per_page' => -1,
+                    'post_status' => 'publish',
+                );
+                $lecture_query = new WP_Query($lecture_args);
+                ?>
+
+                <?php if ($lecture_query->have_posts()): ?>
+                    <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 sciflow-table">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">ID</th>
+                                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Palestrante</th>
+                                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Título da Palestra</th>
+                                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Evento</th>
+                                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Duração</th>
+                                        <th class="pe-4 py-3 text-uppercase fs-xs fw-bold text-muted text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($lecture_query->have_posts()): $lecture_query->the_post(); 
+                                        $l_id = get_the_ID();
+                                        $l_event = get_post_meta($l_id, '_sciflow_event', true);
+                                        $l_event_name = ($l_event === 'enfrute') ? 'Enfrute' : 'Semco';
+                                        $l_duration = get_post_meta($l_id, '_sciflow_duration', true);
+                                    ?>
+                                        <tr>
+                                            <td class="ps-4">
+                                                <span class="text-muted small">#<?php echo esc_html(str_pad($l_id, 4, '0', STR_PAD_LEFT)); ?></span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                        <i class="bi bi-person text-muted"></i>
+                                                    </div>
+                                                    <span class="small fw-semibold"><?php the_author(); ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="sciflow-table-title fw-bold text-dark text-truncate" style="max-width: 300px;">
+                                                    <?php echo SciFlow_Status_Manager::render_title(get_the_title()); ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi <?php echo ($l_event === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                                    <span class="small fw-semibold"><?php echo esc_html($l_event_name); ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border p-2 px-3 rounded-pill fw-bold" style="font-size: 11px;">
+                                                    <i class="bi bi-clock me-1"></i> <?php echo $l_duration ? $l_duration . ' min' : '-'; ?>
+                                                </span>
+                                            </td>
+                                            <td class="pe-4 text-end">
+                                                <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-bold" 
+                                                        data-bs-toggle="collapse" data-bs-target="#lecture-detail-<?php echo $l_id; ?>">
+                                                    <i class="bi bi-eye me-1"></i> Ver Conteúdo
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr class="collapse" id="lecture-detail-<?php echo $l_id; ?>">
+                                            <td colspan="6" class="bg-light border-top p-0">
+                                                <div class="p-4 bg-white m-3 rounded-4 shadow-sm border">
+                                                    <h5 class="fw-900 mb-3 text-dark"><?php echo SciFlow_Status_Manager::render_title(get_the_title()); ?></h5>
+                                                    <div class="mb-4 text-secondary" style="line-height: 1.8;">
+                                                        <?php the_content(); ?>
+                                                    </div>
+                                                    <?php 
+                                                    $l_refs = get_post_meta($l_id, '_sciflow_references', true);
+                                                    if ($l_refs): ?>
+                                                        <div class="pt-4 border-top mt-4">
+                                                            <h6 class="fw-bold small text-uppercase text-muted mb-3"><i class="bi bi-link-45deg me-1"></i> Referências / Links:</h6>
+                                                            <div class="small p-3 bg-light rounded-3"><?php echo nl2br(esc_html($l_refs)); ?></div>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; wp_reset_postdata(); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="sciflow-empty-state text-center py-5 shadow-sm rounded-4 bg-white border mt-4">
+                        <p class="text-muted mb-0">Nenhuma palestra cadastrada até o momento.</p>
+                    </div>
+                <?php endif; ?>
+            </div> <!-- End Lectures Tab -->
+        </div> <!-- End Tab Content -->
     </div>
 </main>
 

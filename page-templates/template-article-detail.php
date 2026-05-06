@@ -140,7 +140,7 @@ echo esc_html(str_pad($visual_id, 4, '0', STR_PAD_LEFT));
                         </div>
 
                         <h1 class="display-6 fw-900 text-dark mb-4">
-                            <?php echo get_the_title($article_id); ?>
+                            <?php echo SciFlow_Status_Manager::render_title(get_the_title($article_id)); ?>
                         </h1>
 
                         <div class="sciflow-content-section mb-5">

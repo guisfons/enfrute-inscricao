@@ -248,7 +248,11 @@ $semco_numbers = array_flip($all_semco);
 ?>
                                 <a href="<?php echo esc_url($view_url); ?>"
                                     class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
-                                    <i class="bi bi-pencil-square me-1"></i> Avaliar
+                                    <?php if ($sciflow_status === 'em_avaliacao'): ?>
+                                        <i class="bi bi-pencil-square me-1"></i> Avaliar
+                                    <?php else: ?>
+                                        <i class="bi bi-eye me-1"></i> Detalhes
+                                    <?php endif; ?>
                                 </a>
                             </td>
                         </tr>
