@@ -18,6 +18,7 @@ if (!function_exists('inscricao_enfrute_setup')):
             'palestrantes' => __('Menu Palestrantes', 'inscricao-enfrute'),
             'editor_dashboard' => __('Menu do Editor', 'inscricao-enfrute'),
             'reviewer_dashboard' => __('Menu do Revisor', 'inscricao-enfrute'),
+            'tecnicos' => __('Menu Técnicos', 'inscricao-enfrute'),
         ));
 
         // Ensure page attributes are supported
@@ -78,6 +79,7 @@ function inscricao_enfrute_nav_menu_args($args)
         // Editor and Revisor roles use 'primary' (default)
         $is_editor = false;
         $editor_roles = array(
+            'sciflow_editor', // Added general editor
             'sciflow_enfrute_editor',
             'sciflow_semco_editor',
             'administrator'
@@ -92,6 +94,7 @@ function inscricao_enfrute_nav_menu_args($args)
 
         $is_reviewer = false;
         $reviewer_roles = array(
+            'sciflow_revisor', // Added general revisor
             'sciflow_enfrute_revisor',
             'sciflow_semco_revisor',
         );
@@ -103,13 +106,19 @@ function inscricao_enfrute_nav_menu_args($args)
             }
         }
 
-        if ($is_editor && has_nav_menu('editor_dashboard')) {
+        $is_speaker = in_array('sciflow_speaker', $roles);
+        $is_tecnico = in_array('sciflow_tecnico_epagri', $roles);
+        $is_inscrito = in_array('sciflow_inscrito', $roles);
+
+        if ($is_tecnico && has_nav_menu('tecnicos')) {
+            $args['theme_location'] = 'tecnicos';
+        } elseif ($is_editor && has_nav_menu('editor_dashboard')) {
             $args['theme_location'] = 'editor_dashboard';
         } elseif ($is_reviewer && has_nav_menu('reviewer_dashboard')) {
             $args['theme_location'] = 'reviewer_dashboard';
-        } elseif (!$is_editor && !$is_reviewer && in_array('sciflow_speaker', $roles) && has_nav_menu('palestrantes')) {
+        } elseif ($is_speaker && has_nav_menu('palestrantes')) {
             $args['theme_location'] = 'palestrantes';
-        } elseif (!$is_editor && !$is_reviewer && in_array('sciflow_inscrito', $roles) && has_nav_menu('inscritos')) {
+        } elseif ($is_inscrito && has_nav_menu('inscritos')) {
             $args['theme_location'] = 'inscritos';
         }
     }
@@ -413,7 +422,18 @@ function enfrute_user_has_paid_registration($user_id = null)
     // Admins and editors always have access
     $user = get_userdata($user_id);
     if ($user) {
-        $bypass_roles = array('administrator', 'sciflow_editor', 'sciflow_enfrute_editor', 'sciflow_semco_editor', 'sciflow_review', 'sciflow_revisor', 'sciflow_enfrute_revisor', 'sciflow_semco_revisor');
+        $bypass_roles = array(
+            'administrator', 
+            'sciflow_editor', 
+            'sciflow_enfrute_editor', 
+            'sciflow_semco_editor', 
+            'sciflow_review', 
+            'sciflow_revisor', 
+            'sciflow_enfrute_revisor', 
+            'sciflow_semco_revisor',
+            'sciflow_speaker',         
+            'sciflow_tecnico_epagri'  
+        );
         foreach ($bypass_roles as $role) {
             if (in_array($role, (array) $user->roles, true)) {
                 return true;
