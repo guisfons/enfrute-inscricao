@@ -61,6 +61,13 @@ else {
 }
 
 $query = new WP_Query($args);
+if (!empty($query->posts)) {
+    usort($query->posts, function($a, $b) {
+        $vis_a = intval(SciFlow_Status_Manager::get_visual_id($a->ID));
+        $vis_b = intval(SciFlow_Status_Manager::get_visual_id($b->ID));
+        return $vis_a <=> $vis_b;
+    });
+}
 
 // Calculate global order of submission for IDs
 $all_enfrute = get_posts(array(
@@ -338,7 +345,17 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
         $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
         $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo'); // Fallback slug
         $view_url = add_query_arg('article_id', $post_id, $detail_url);
-?>
+
+        $attachment_id = get_post_meta($post_id, '_sciflow_attachment_id', true);
+        if ($attachment_id): 
+            $attachment_url = wp_get_attachment_url($attachment_id);
+            $file_ext = pathinfo($attachment_url, PATHINFO_EXTENSION);
+            $icon_class = in_array(strtolower($file_ext), array('pdf'), true) ? 'bi-file-earmark-pdf' : 'bi-file-earmark-word';
+        ?>
+                                    <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-1">
+                                        <i class="bi <?php echo esc_attr($icon_class); ?>"></i> Baixar
+                                    </a>
+        <?php endif; ?>
                                 <a href="<?php echo esc_url($view_url); ?>"
                                     class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
                                     <i class="bi bi-eye me-1"></i> Ver
@@ -374,6 +391,16 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                     'post_status' => 'publish',
                 );
                 $lecture_query = new WP_Query($lecture_args);
+                if (!empty($lecture_query->posts)) {
+                    usort($lecture_query->posts, function($a, $b) {
+                        $time_a = strtotime($a->post_date);
+                        $time_b = strtotime($b->post_date);
+                        if ($time_a === $time_b) {
+                            return $b->ID <=> $a->ID;
+                        }
+                        return $time_b <=> $time_a;
+                    });
+                }
                 ?>
 
                 <?php if ($lecture_query->have_posts()): ?>
@@ -399,7 +426,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                                     ?>
                                         <tr>
                                             <td class="ps-4">
-                                                <span class="text-muted small">#<?php echo esc_html(str_pad($l_id, 4, '0', STR_PAD_LEFT)); ?></span>
+                                                <span class="text-muted small">#<?php $l_visual_id = SciFlow_Status_Manager::get_visual_id($l_id); echo esc_html(str_pad($l_visual_id, 4, '0', STR_PAD_LEFT)); ?></span>
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -426,6 +453,17 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                                                 </span>
                                             </td>
                                             <td class="pe-4 text-end">
+                                                <?php 
+                                                $l_file_id = get_post_meta($l_id, '_sciflow_attachment_id', true);
+                                                if ($l_file_id): 
+                                                    $l_file_url = wp_get_attachment_url($l_file_id);
+                                                    $l_file_ext = pathinfo($l_file_url, PATHINFO_EXTENSION);
+                                                    $l_icon_class = in_array(strtolower($l_file_ext), array('pdf'), true) ? 'bi-file-earmark-pdf' : 'bi-file-earmark-word';
+                                                ?>
+                                                    <a href="<?php echo esc_url($l_file_url); ?>" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-1">
+                                                        <i class="bi <?php echo esc_attr($l_icon_class); ?>"></i> Baixar
+                                                    </a>
+                                                <?php endif; ?>
                                                 <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-bold" 
                                                         data-bs-toggle="collapse" data-bs-target="#lecture-detail-<?php echo $l_id; ?>">
                                                     <i class="bi bi-eye me-1"></i> Ver Conteúdo
@@ -437,7 +475,31 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                                                 <div class="p-4 bg-white m-3 rounded-4 shadow-sm border">
                                                     <h5 class="fw-900 mb-3 text-dark"><?php echo SciFlow_Status_Manager::render_title(get_the_title()); ?></h5>
                                                     <div class="mb-4 text-secondary" style="line-height: 1.8;">
-                                                        <?php the_content(); ?>
+                                                        <?php 
+                                                        $l_file_id = get_post_meta($l_id, '_sciflow_attachment_id', true);
+                                                        $l_file_url = $l_file_id ? wp_get_attachment_url($l_file_id) : '';
+
+                                                        if ($l_file_url): 
+                                                            $l_file_ext = pathinfo($l_file_url, PATHINFO_EXTENSION);
+                                                            $l_icon_class = in_array(strtolower($l_file_ext), array('pdf'), true) ? 'bi-file-earmark-pdf' : 'bi-file-earmark-word';
+                                                        ?>
+                                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 20px; display: inline-block;">
+                                                                <a href="<?php echo esc_url($l_file_url); ?>" target="_blank" class="btn btn-primary btn-sm fw-bold">
+                                                                    <i class="bi <?php echo esc_attr($l_icon_class); ?>"></i> <?php esc_html_e('Baixar Conteúdo', 'sciflow-wp'); ?>
+                                                                </a>
+                                                                <small style="display:block; margin-top:5px; color:#666;">ID Anexo: <?php echo esc_html($l_file_id); ?></small>
+                                                            </div>
+                                                        <?php elseif (get_the_content()): ?>
+                                                            <div class="sciflow-content-legacy">
+                                                                <?php the_content(); ?>
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div style="padding: 15px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px; color: #c53030;">
+                                                                <i class="bi bi-exclamation-triangle-fill"></i> 
+                                                                <?php esc_html_e('Nenhum arquivo ou resumo encontrado para esta palestra.', 'sciflow-wp'); ?>
+                                                                <br><small>Post ID: <?php echo $l_id; ?></small>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                     <?php 
                                                     $l_refs = get_post_meta($l_id, '_sciflow_references', true);

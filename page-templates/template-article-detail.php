@@ -145,6 +145,20 @@ echo esc_html(str_pad($visual_id, 4, '0', STR_PAD_LEFT));
 
                         <div class="sciflow-content-section mb-5">
                             <h3 class="h5 fw-bold text-dark border-bottom pb-2 mb-3">Resumo / Conteúdo</h3>
+                            <?php 
+                            $attachment_id = get_post_meta($article_id, '_sciflow_attachment_id', true);
+                            if ($attachment_id): 
+                                $attachment_url = wp_get_attachment_url($attachment_id);
+                                $file_ext = pathinfo($attachment_url, PATHINFO_EXTENSION);
+                                $icon_class = in_array(strtolower($file_ext), array('pdf'), true) ? 'bi-file-earmark-pdf' : 'bi-file-earmark-word';
+                            ?>
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 20px; display: inline-block;">
+                                    <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" class="btn btn-primary btn-sm fw-bold">
+                                        <i class="bi <?php echo esc_attr($icon_class); ?>"></i> <?php esc_html_e('Baixar Trabalho', 'sciflow-wp'); ?>
+                                    </a>
+                                    <small style="display:block; margin-top:5px; color:#666;"><?php printf(__('ID Anexo: %s', 'sciflow-wp'), esc_html($attachment_id)); ?></small>
+                                </div>
+                            <?php endif; ?>
                             <div class="text-muted lh-lg">
                                 <?php echo wpautop(get_post_field('post_content', $article_id)); ?>
                             </div>
