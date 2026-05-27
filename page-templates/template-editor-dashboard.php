@@ -65,7 +65,7 @@ if (!empty($query->posts)) {
     usort($query->posts, function($a, $b) {
         $vis_a = intval(SciFlow_Status_Manager::get_visual_id($a->ID));
         $vis_b = intval(SciFlow_Status_Manager::get_visual_id($b->ID));
-        return $vis_a <=> $vis_b;
+        return $vis_b <=> $vis_a;
     });
 }
 
