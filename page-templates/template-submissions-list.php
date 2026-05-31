@@ -30,7 +30,20 @@ $args = array(
 
 $query = new WP_Query($args);
 
-
+$settings = get_option('sciflow_settings', array());
+$deadline = isset($settings['article_submission_deadline']) ? $settings['article_submission_deadline'] : '';
+$deadline_passed = false;
+if (!empty($deadline)) {
+    try {
+        $deadline_dt = new DateTime($deadline, wp_timezone());
+        $now_dt = current_datetime();
+        if ($now_dt > $deadline_dt) {
+            $deadline_passed = true;
+        }
+    } catch (Exception $e) {
+        // Ignore
+    }
+}
 ?>
 
 <main class="sciflow-submissions-list py-5">
@@ -39,9 +52,15 @@ $query = new WP_Query($args);
             <h1 class="h2 mb-0">
                 <?php esc_html_e('Meus Resumos', 'enfrute'); ?>
             </h1>
+            <?php if (!$deadline_passed): ?>
             <a href="<?php echo esc_url(home_url('/submissao')); ?>" class="sciflow-btn sciflow-btn--primary">
                 <?php esc_html_e('Nova Submissão', 'enfrute'); ?>
             </a>
+            <?php else: ?>
+            <span class="badge bg-secondary text-white rounded-pill px-3 py-2 fs-6 fw-bold">
+                <?php esc_html_e('Submissões Encerradas', 'enfrute'); ?>
+            </span>
+            <?php endif; ?>
         </div>
 
         <?php if ($query->have_posts()): ?>
@@ -181,10 +200,16 @@ else: ?>
             <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
                 Você ainda não iniciou a submissão de nenhum trabalho científico.
             </p>
+            <?php if (!$deadline_passed): ?>
             <a href="<?php echo esc_url(home_url('/submissao')); ?>"
                 class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
                 Nova Submissão
             </a>
+            <?php else: ?>
+            <div class="alert alert-warning d-inline-block rounded-pill px-4 py-2 mt-2">
+                <?php esc_html_e('O prazo para novas submissões de artigos foi encerrado.', 'enfrute'); ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php
 endif; ?>
