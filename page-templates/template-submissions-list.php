@@ -44,6 +44,28 @@ if (!empty($deadline)) {
         // Ignore
     }
 }
+
+// Poster deadline
+$poster_deadline_str = isset($settings['poster_submission_deadline']) ? $settings['poster_submission_deadline'] : '';
+$poster_deadline_passed = false;
+$poster_deadline_formatted = '';
+if (!empty($poster_deadline_str)) {
+    $poster_deadline_time = strtotime($poster_deadline_str);
+    $poster_deadline_passed = current_time('timestamp') > $poster_deadline_time;
+    $poster_deadline_formatted = wp_date('d/m/Y', $poster_deadline_time);
+}
+
+// Check if the current user has any work with status 'aprovado'
+$has_aprovado = false;
+if ($query->have_posts()) {
+    foreach ($query->posts as $p) {
+        $st = get_post_meta($p->ID, '_sciflow_status', true);
+        if ($st === 'aprovado') {
+            $has_aprovado = true;
+            break;
+        }
+    }
+}
 ?>
 
 <main class="sciflow-submissions-list py-5">
@@ -62,6 +84,19 @@ if (!empty($deadline)) {
             </span>
             <?php endif; ?>
         </div>
+
+        <?php if ($has_aprovado && !$poster_deadline_passed && !empty($poster_deadline_formatted)): ?>
+        <div class="alert d-flex align-items-start gap-3 mb-4 rounded-3 shadow-sm" style="background:#fff8e7; border-left:4px solid #f0ad4e; border-radius:8px; padding:14px 18px;">
+            <span style="font-size:1.4rem;">⚠️</span>
+            <div>
+                <strong><?php esc_html_e('Prazo para envio do pôster!', 'enfrute'); ?></strong><br>
+                <?php printf(
+                    esc_html__('Você tem trabalho(s) aprovado(s) aguardando o envio do pôster em PDF. O prazo para envio é %s. Após essa data não será mais possível realizar o envio.', 'enfrute'),
+                    '<strong>' . esc_html($poster_deadline_formatted) . '</strong>'
+                ); ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php if ($query->have_posts()): ?>
         <div class="sciflow-table-container shadow-sm rounded-4 overflow-hidden bg-white mt-4 border">

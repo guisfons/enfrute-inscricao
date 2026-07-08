@@ -87,6 +87,17 @@ $reviewer_scores = get_post_meta($article_id, '_sciflow_scores', true) ?: array(
 $poster_id = (int)get_post_meta($article_id, '_sciflow_poster_id', true);
 $poster_editorial_notes = get_post_meta($article_id, '_sciflow_poster_editorial_notes', true);
 $ranking_score = get_post_meta($article_id, '_sciflow_ranking_score', true);
+
+// Poster deadline
+$sf_settings = get_option('sciflow_settings', array());
+$poster_deadline_str = $sf_settings['poster_submission_deadline'] ?? '';
+$poster_deadline_passed = false;
+$poster_deadline_formatted = '';
+if (!empty($poster_deadline_str)) {
+    $poster_deadline_time = strtotime($poster_deadline_str);
+    $poster_deadline_passed = current_time('timestamp') > $poster_deadline_time;
+    $poster_deadline_formatted = wp_date('d/m/Y', $poster_deadline_time);
+}
 ?>
 
 <main class="sciflow-article-detail py-5 bg-light min-vh-100">
@@ -546,6 +557,22 @@ endif; ?>
                 <?php
 $is_approved = in_array($sciflow_status, ['aprovado', 'poster_em_correcao']);
 $show_upload = ($is_author && $is_approved);
+
+// Poster deadline banner for author with 'aprovado' status
+if ($is_author && $sciflow_status === 'aprovado' && !$poster_deadline_passed && !empty($poster_deadline_formatted)): ?>
+                <div class="alert d-flex align-items-start gap-3 mb-4 rounded-3" style="background:#fff8e7; border-left:4px solid #f0ad4e; padding:14px 18px;">
+                    <span style="font-size:1.4rem;">⚠️</span>
+                    <div>
+                        <strong><?php esc_html_e('Prazo para envio do pôster!', 'sciflow-wp'); ?></strong><br>
+                        <?php printf(
+                            esc_html__('Seu trabalho foi aprovado. Envie o pôster em PDF até %s. Após essa data não será mais possível realizar o envio.', 'sciflow-wp'),
+                            '<strong>' . esc_html($poster_deadline_formatted) . '</strong>'
+                        ); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php
 if ($poster_id || $show_upload):
     $poster_url = $poster_id ? wp_get_attachment_url($poster_id) : '';
     $poster_file = $poster_id ? get_attached_file($poster_id) : '';
