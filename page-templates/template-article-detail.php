@@ -94,8 +94,8 @@ $poster_deadline_str = $sf_settings['poster_submission_deadline'] ?? '';
 $poster_deadline_passed = false;
 $poster_deadline_formatted = '';
 if (!empty($poster_deadline_str)) {
-    $poster_deadline_time = strtotime($poster_deadline_str);
-    $poster_deadline_passed = current_time('timestamp') > $poster_deadline_time;
+    $poster_deadline_time = strtotime(str_replace('/', '-', $poster_deadline_str));
+    $poster_deadline_passed = $poster_deadline_time && current_time('timestamp') > $poster_deadline_time;
     $poster_deadline_formatted = wp_date('d/m/Y', $poster_deadline_time);
 }
 ?>
@@ -555,7 +555,7 @@ endif; ?>
 
                 <!-- 3. Seção do Pôster (Arquivos e Upload) -->
                 <?php
-$is_approved = in_array($sciflow_status, ['aprovado', 'poster_em_correcao']);
+$is_approved = in_array($sciflow_status, ['aprovado', 'poster_em_correcao', 'aguardando_poster']);
 $show_upload = ($is_author && $is_approved);
 
 // Poster deadline banner for author with 'aprovado' status
