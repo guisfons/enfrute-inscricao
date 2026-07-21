@@ -55,12 +55,13 @@ if (!empty($poster_deadline_str)) {
     $poster_deadline_formatted = wp_date('d/m/Y', $poster_deadline_time);
 }
 
-// Check if the current user has any work with status 'aprovado'
+// Check if the current user has any work with status 'aprovado' or in confirmation phases without a poster uploaded
 $has_aprovado = false;
 if ($query->have_posts()) {
     foreach ($query->posts as $p) {
         $st = get_post_meta($p->ID, '_sciflow_status', true);
-        if ($st === 'aprovado') {
+        $poster_id = get_post_meta($p->ID, '_sciflow_poster_id', true);
+        if ($st === 'aprovado' || (in_array($st, array('aguardando_confirmacao', 'confirmado'), true) && !$poster_id)) {
             $has_aprovado = true;
             break;
         }

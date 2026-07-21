@@ -555,11 +555,11 @@ endif; ?>
 
                 <!-- 3. Seção do Pôster (Arquivos e Upload) -->
                 <?php
-$is_approved = in_array($sciflow_status, ['aprovado', 'poster_em_correcao', 'aguardando_poster']);
+$is_approved = in_array($sciflow_status, ['aprovado', 'poster_em_correcao', 'aguardando_poster', 'aguardando_confirmacao', 'confirmado']);
 $show_upload = ($is_author && $is_approved);
 
-// Poster deadline banner for author with 'aprovado' status
-if ($is_author && $sciflow_status === 'aprovado' && !$poster_deadline_passed && !empty($poster_deadline_formatted)): ?>
+// Poster deadline banner for author when poster is still needed
+if ($is_author && !$poster_id && in_array($sciflow_status, ['aprovado', 'aguardando_confirmacao', 'confirmado'], true) && !$poster_deadline_passed && !empty($poster_deadline_formatted)): ?>
                 <div class="alert d-flex align-items-start gap-3 mb-4 rounded-3" style="background:#fff8e7; border-left:4px solid #f0ad4e; padding:14px 18px;">
                     <span style="font-size:1.4rem;">⚠️</span>
                     <div>
