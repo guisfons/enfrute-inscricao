@@ -300,6 +300,8 @@ function enfrute_post_val($key) {
                                 'posts_per_page'   => -1,
                                 'post_type'        => 'shop_coupon',
                                 'post_status'      => 'publish',
+                                'orderby'          => 'title',
+                                'order'            => 'ASC',
                             );
                             $all_coupons = get_posts( $args );
                             $available_coupons = array();
