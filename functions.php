@@ -60,6 +60,7 @@ function inscricao_enfrute_register_templates($post_templates, $theme, $post, $p
         $post_templates['page-templates/template-reviewer-dashboard.php'] = 'Dashboard do Revisor';
         $post_templates['page-templates/template-article-detail.php'] = 'Detalhes do Artigo (Review)';
         $post_templates['page-templates/template-home-inscription.php'] = 'Inscrição - Início';
+        $post_templates['page-templates/template-terceiros.php'] = 'Inscrição de Terceiros';
 
     }
 
