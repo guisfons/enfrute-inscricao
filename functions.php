@@ -891,7 +891,7 @@ function enfrute_registration_deadline_notice() {
             $deadline_timestamp = strtotime($deadline);
             $current_timestamp = current_time('timestamp');
             if ($current_timestamp > $deadline_timestamp) {
-                echo '<div class="woocommerce-error" style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 5px solid #f5c6cb;">O prazo para inscrições online encerrou. As inscrições agora só podem ser feitas presencialmente no local do evento.</div>';
+                echo '<div class="woocommerce-error" style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 5px solid #f5c6cb;"> O prazo para inscrições online encerrou. As inscrições agora só podem ser feitas presencialmente no local do evento.</div>';
             }
         }
     }
