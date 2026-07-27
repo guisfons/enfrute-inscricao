@@ -172,11 +172,31 @@ elseif ($product): ?>
                         </div>
                     </div>
 
-                    <div class="action-buttons d-grid d-md-flex gap-3">
-                        <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
-                            class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm transition-up">
-                            <i class="bi bi-cart-plus me-2"></i> Inscrever-se Agora
-                        </a>
+                    <div class="action-buttons d-grid d-md-flex gap-3 flex-column">
+                        <?php
+                            $settings = get_option('sciflow_settings', array());
+                            $deadline = $settings['registration_deadline'] ?? '';
+                            $deadline_passed = false;
+                            if (!empty($deadline)) {
+                                $deadline_timestamp = strtotime($deadline);
+                                $current_timestamp = current_time('timestamp');
+                                if ($current_timestamp > $deadline_timestamp) {
+                                    $deadline_passed = true;
+                                }
+                            }
+                            
+                            if ($deadline_passed):
+                        ?>
+                            <div class="alert alert-danger fw-bold rounded-3 shadow-sm px-4 py-3" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">
+                                <i class="bi bi-x-circle-fill me-2"></i> O prazo para inscrições online encerrou. As inscrições agora só podem ser feitas presencialmente no local do evento.
+                            </div>
+                        <?php else: ?>
+                            <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
+                                class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm transition-up">
+                                <i class="bi bi-cart-plus me-2"></i> Inscrever-se Agora
+                            </a>
+                        <?php endif; ?>
+                        
                         <?php if (is_user_logged_in()): ?>
                         <a href="<?php echo esc_url(home_url('/meus-artigos')); ?>"
                             class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 fw-bold">

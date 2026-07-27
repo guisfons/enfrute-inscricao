@@ -789,3 +789,111 @@ function enfrute_remove_paypal_buttons_from_product_page() {
     }
 }
 
+/**
+ * Adicionar texto de LGPD na tela de checkout (acima dos termos)
+ */
+add_action('wp_footer', 'enfrute_lgpd_checkout_script');
+function enfrute_lgpd_checkout_script() {
+    if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+        return;
+    }
+    
+    $settings = get_option('sciflow_settings', array());
+    $lgpd_text = !empty($settings['lgpd_consent_text']) ? wp_kses_post($settings['lgpd_consent_text']) : 'Declaro que li e concordo com os termos de consentimento da LGPD.';
+    
+    ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const lgpdText = <?php echo wp_json_encode($lgpd_text); ?>;
+        
+        const interval = setInterval(function() {
+            // Check for WooCommerce Checkout block terms
+            const termsContainer = document.querySelector('.wc-block-checkout__terms');
+            if (termsContainer && !document.getElementById('enfrute-lgpd-checkout-text')) {
+                const lgpdDiv = document.createElement('div');
+                lgpdDiv.id = 'enfrute-lgpd-checkout-text';
+                lgpdDiv.style.marginBottom = '15px';
+                lgpdDiv.style.fontSize = '14px';
+                lgpdDiv.innerHTML = lgpdText;
+                
+                termsContainer.parentNode.insertBefore(lgpdDiv, termsContainer);
+                clearInterval(interval);
+            }
+            
+            // Fallback for classic checkout
+            const classicTerms = document.querySelector('.woocommerce-terms-and-conditions-wrapper');
+            if (classicTerms && !document.getElementById('enfrute-lgpd-checkout-text')) {
+                const lgpdDiv = document.createElement('div');
+                lgpdDiv.id = 'enfrute-lgpd-checkout-text';
+                lgpdDiv.style.marginBottom = '15px';
+                lgpdDiv.style.fontSize = '14px';
+                lgpdDiv.innerHTML = lgpdText;
+                
+                classicTerms.parentNode.insertBefore(lgpdDiv, classicTerms);
+                clearInterval(interval);
+            }
+        }, 500);
+
+        setTimeout(() => clearInterval(interval), 10000);
+    });
+    </script>
+    <?php
+}
+
+/**
+ * Create custom role "Inscritor de Terceiros" based on customer role capabilities.
+ */
+function enfrute_add_third_party_registration_role() {
+    if ( ! get_role( 'inscritor_terceiros' ) ) {
+        $customer_role = get_role( 'customer' );
+        $capabilities = $customer_role ? $customer_role->capabilities : array( 'read' => true );
+        add_role( 'inscritor_terceiros', 'Inscritor de Terceiros', $capabilities );
+    }
+}
+add_action( 'init', 'enfrute_add_third_party_registration_role' );
+
+/**
+ * Check if the registration deadline has passed and block purchase.
+ */
+function enfrute_check_registration_deadline( $purchasable, $product ) {
+    $settings = get_option('sciflow_settings', array());
+    $raw_ids = $settings['woo_product_ids'] ?? '';
+    $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
+    
+    if (in_array($product->get_id(), $product_ids)) {
+        $deadline = $settings['registration_deadline'] ?? '';
+        if (!empty($deadline)) {
+            $deadline_timestamp = strtotime($deadline);
+            $current_timestamp = current_time('timestamp');
+            if ($current_timestamp > $deadline_timestamp) {
+                return false;
+            }
+        }
+    }
+    return $purchasable;
+}
+add_filter('woocommerce_is_purchasable', 'enfrute_check_registration_deadline', 10, 2);
+
+/**
+ * Show notice on single product page if registration deadline has passed.
+ */
+function enfrute_registration_deadline_notice() {
+    global $product;
+    if (!$product) return;
+    
+    $settings = get_option('sciflow_settings', array());
+    $raw_ids = $settings['woo_product_ids'] ?? '';
+    $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
+    
+    if (in_array($product->get_id(), $product_ids)) {
+        $deadline = $settings['registration_deadline'] ?? '';
+        if (!empty($deadline)) {
+            $deadline_timestamp = strtotime($deadline);
+            $current_timestamp = current_time('timestamp');
+            if ($current_timestamp > $deadline_timestamp) {
+                echo '<div class="woocommerce-error" style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 5px solid #f5c6cb;">O prazo para inscrições online encerrou. As inscrições agora só podem ser feitas presencialmente no local do evento.</div>';
+            }
+        }
+    }
+}
+add_action('woocommerce_single_product_summary', 'enfrute_registration_deadline_notice', 30);
