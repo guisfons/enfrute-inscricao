@@ -931,3 +931,26 @@ function enfrute_validate_add_cart_deadline( $passed, $product_id, $quantity ) {
     return $passed;
 }
 add_filter( 'woocommerce_add_to_cart_validation', 'enfrute_validate_add_cart_deadline', 10, 3 );
+
+/**
+ * Redirect third-party registrars to their specific panel upon login.
+ */
+function enfrute_inscritor_wp_login_redirect( $redirect_to, $request, $user ) {
+    if ( isset( $user->roles ) && is_array( $user->roles ) ) {
+        if ( in_array( 'inscritor_terceiros', $user->roles ) ) {
+            return home_url( '/inscricao-de-terceiros/' );
+        }
+    }
+    return $redirect_to;
+}
+add_filter( 'login_redirect', 'enfrute_inscritor_wp_login_redirect', 10, 3 );
+
+function enfrute_inscritor_wc_login_redirect( $redirect, $user ) {
+    if ( isset( $user->roles ) && is_array( $user->roles ) ) {
+        if ( in_array( 'inscritor_terceiros', $user->roles ) ) {
+            return home_url( '/inscricao-de-terceiros/' );
+        }
+    }
+    return $redirect;
+}
+add_filter( 'woocommerce_login_redirect', 'enfrute_inscritor_wc_login_redirect', 10, 2 );
