@@ -291,6 +291,57 @@ function enfrute_post_val($key) {
                         <div class="mb-4">
                             <label for="coupon_code" class="form-label">Cupom de Desconto *</label>
                             <input type="text" class="form-control" id="coupon_code" name="coupon_code" required value="<?php echo enfrute_post_val('coupon_code'); ?>" placeholder="Digite o código do cupom">
+                            <?php
+                            $args = array(
+                                'posts_per_page'   => -1,
+                                'post_type'        => 'shop_coupon',
+                                'post_status'      => 'publish',
+                            );
+                            $all_coupons = get_posts( $args );
+                            $available_coupons = array();
+                            foreach ( $all_coupons as $c_post ) {
+                                $taxonomies = get_object_taxonomies('shop_coupon');
+                                $is_inscritor = false;
+                                foreach ($taxonomies as $tax) {
+                                    if (has_term('inscritor', $tax, $c_post->ID) || has_term('Inscritor', $tax, $c_post->ID)) {
+                                        $is_inscritor = true;
+                                        break;
+                                    }
+                                }
+                                
+                                // Fallback: check se está no título ou descrição
+                                if (!$is_inscritor && (stripos($c_post->post_excerpt, 'inscritor') !== false || stripos($c_post->post_title, 'inscritor') !== false)) {
+                                    $is_inscritor = true;
+                                }
+
+                                if ($is_inscritor) {
+                                    $coupon_obj = new WC_Coupon($c_post->ID);
+                                    
+                                    // Check expiração
+                                    $expiry_date = $coupon_obj->get_date_expires();
+                                    if ($expiry_date && $expiry_date->getTimestamp() < current_time('timestamp')) {
+                                        continue;
+                                    }
+                                    
+                                    // Check limite de uso
+                                    $usage_limit = $coupon_obj->get_usage_limit();
+                                    $usage_count = $coupon_obj->get_usage_count();
+                                    if ($usage_limit > 0 && $usage_count >= $usage_limit) {
+                                        continue;
+                                    }
+
+                                    $discount_type = $coupon_obj->get_discount_type();
+                                    $amount = $coupon_obj->get_amount();
+                                    $discount_text = ($discount_type == 'percent') ? floatval($amount) . '%' : 'R$ ' . number_format((float)$amount, 2, ',', '.');
+
+                                    $available_coupons[] = '<code style="cursor:pointer;" onclick="document.getElementById(\'coupon_code\').value=\'' . esc_js($coupon_obj->get_code()) . '\'">' . esc_html($coupon_obj->get_code()) . ' (-' . $discount_text . ')</code>';
+                                }
+                            }
+
+                            if (!empty($available_coupons)) {
+                                echo '<div class="form-text mt-2"><i class="bi bi-ticket-perforated"></i> <strong>Cupons disponíveis:</strong> ' . implode(', ', $available_coupons) . ' <br><small>(Clique no cupom para preencher)</small></div>';
+                            }
+                            ?>
                         </div>
 
                         <div class="d-grid">
