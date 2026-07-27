@@ -38,10 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
         $postcode = sanitize_text_field($_POST['postcode']);
         
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+        $coupon_code = isset($_POST['coupon_code']) ? sanitize_text_field($_POST['coupon_code']) : '';
 
         // Validation
-        if (empty($first_name) || empty($last_name) || empty($email) || empty($cpf) || empty($product_id)) {
-            $error = 'Por favor, preencha os campos obrigatórios (Nome, Sobrenome, E-mail, CPF e Categoria).';
+        if (empty($first_name) || empty($last_name) || empty($email) || empty($cpf) || empty($product_id) || empty($coupon_code)) {
+            $error = 'Por favor, preencha os campos obrigatórios (Nome, Sobrenome, E-mail, CPF, Categoria e Cupom).';
         } elseif (email_exists($email)) {
             $error = 'Este e-mail já está cadastrado.';
         } else {
@@ -57,7 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
             if ($cpf_exists) {
                 $error = 'Este CPF já está cadastrado em outra conta.';
             } else {
-                // 1. Create WordPress User
+                // Valida o cupom antes de criar o usuário e o pedido
+                $coupon = new WC_Coupon($coupon_code);
+                if (!$coupon->get_id()) {
+                    $error = 'O cupom inserido não existe.';
+                } elseif (!$coupon->is_valid()) {
+                    $error = 'O cupom inserido é inválido, expirou ou atingiu o limite de uso.';
+                } else {
+                    // 1. Create WordPress User
                 $username = sanitize_user(current(explode('@', $email)), true);
                 // Ensure unique username
                 $append = 1;
@@ -128,19 +136,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
                             // Calculate totals BEFORE setting fee so base totals are generated
                             $order->calculate_totals();
 
-                            // 3. ZERO THE ORDER TOTAL
-                            $current_total = $order->get_total();
-                            if ($current_total > 0) {
-                                $fee = new WC_Order_Item_Fee();
-                                $fee->set_name('Isenção de Inscrição (Terceiros)');
-                                $fee->set_amount(-$current_total);
-                                $fee->set_total(-$current_total);
-                                $order->add_item($fee);
-                                $order->calculate_totals();
+                            // 3. APPLY COUPON INSTEAD OF ZEROING AUTOMATICALLY
+                            $applied = $order->apply_coupon($coupon_code);
+                            if (is_wp_error($applied)) {
+                                throw new Exception($applied->get_error_message());
                             }
 
-                            // Update status to completed
-                            $order->update_status('completed', 'Inscrição realizada por Inscritor de Terceiros (Admin/Zerado).');
+                            $order->calculate_totals();
+
+                            // Update status
+                            if ($order->get_total() == 0) {
+                                $order->update_status('completed', 'Inscrição realizada por Inscritor de Terceiros com cupom integral.');
+                            } else {
+                                $order->update_status('pending', 'Inscrição realizada por Inscritor de Terceiros. Cupom aplicado mas saldo não zerou.');
+                            }
 
                             $message = 'Inscrição para <strong>' . esc_html($first_name . ' ' . $last_name) . '</strong> criada com sucesso! O pedido e a conta foram gerados.';
                             
@@ -154,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
                             $error = 'Produto inválido selecionado.';
                         }
                     } catch (Exception $e) {
-                        $error = 'Erro ao criar o pedido: ' . $e->getMessage();
+                        $error = 'Erro ao processar o pedido: ' . $e->getMessage();
                     }
                 }
             }
@@ -172,7 +181,7 @@ function enfrute_post_val($key) {
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <h1 class="mb-4">Inscrição de Terceiros</h1>
-            <p class="text-muted">Utilize este formulário para registrar participantes. A inscrição será gerada automaticamente com valor isento (R$ 0,00).</p>
+            <p class="text-muted">Utilize este formulário para registrar participantes. É obrigatório inserir um código de cupom válido para concluir a inscrição.</p>
             
             <?php if (!empty($message)) : ?>
                 <div class="alert alert-success"><?php echo wp_kses_post($message); ?></div>
@@ -277,6 +286,11 @@ function enfrute_post_val($key) {
                                 }
                                 ?>
                             </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="coupon_code" class="form-label">Cupom de Desconto *</label>
+                            <input type="text" class="form-control" id="coupon_code" name="coupon_code" required value="<?php echo enfrute_post_val('coupon_code'); ?>" placeholder="Digite o código do cupom">
                         </div>
 
                         <div class="d-grid">
