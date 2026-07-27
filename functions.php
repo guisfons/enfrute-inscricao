@@ -860,7 +860,10 @@ function enfrute_check_registration_deadline( $purchasable, $product ) {
     $raw_ids = $settings['woo_product_ids'] ?? '';
     $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
     
-    if (in_array($product->get_id(), $product_ids)) {
+    $product_id = $product->get_id();
+    $parent_id = $product->is_type('variation') ? $product->get_parent_id() : 0;
+    
+    if (in_array($product_id, $product_ids) || ($parent_id && in_array($parent_id, $product_ids))) {
         $deadline = $settings['registration_deadline'] ?? '';
         if (!empty($deadline)) {
             $deadline_timestamp = strtotime($deadline);
@@ -873,9 +876,10 @@ function enfrute_check_registration_deadline( $purchasable, $product ) {
     return $purchasable;
 }
 add_filter('woocommerce_is_purchasable', 'enfrute_check_registration_deadline', 10, 2);
+add_filter('woocommerce_variation_is_purchasable', 'enfrute_check_registration_deadline', 10, 2);
 
 /**
- * Show notice on single product page if registration deadline has passed.
+ * Show notice on single product page if registration deadline has passed and hide add to cart form.
  */
 function enfrute_registration_deadline_notice() {
     global $product;
@@ -892,8 +896,37 @@ function enfrute_registration_deadline_notice() {
             $current_timestamp = current_time('timestamp');
             if ($current_timestamp > $deadline_timestamp) {
                 echo '<div class="woocommerce-error" style="background-color: #f8d7da; color: #721c24; margin-bottom: 20px; border-radius: 5px; border-left: 5px solid #f5c6cb;">O prazo para inscrições online encerrou. As inscrições agora só podem ser feitas presencialmente no local do evento.</div>';
+                
+                // Remover o botão e formulário de compra (previne o problema de cache das variações do WooCommerce)
+                remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_add_to_cart', 30);
             }
         }
     }
 }
-add_action('woocommerce_single_product_summary', 'enfrute_registration_deadline_notice', 30);
+add_action('woocommerce_single_product_summary', 'enfrute_registration_deadline_notice', 29); // Priority 29 so it runs before add_to_cart (which is 30)
+
+/**
+ * Backend validation to ensure products cannot be added to cart if deadline passed.
+ */
+function enfrute_validate_add_cart_deadline( $passed, $product_id, $quantity ) {
+    $settings = get_option('sciflow_settings', array());
+    $raw_ids = $settings['woo_product_ids'] ?? '';
+    $product_ids = array_filter(array_map('absint', explode(',', $raw_ids)));
+    
+    $product = wc_get_product($product_id);
+    $parent_id = $product && $product->is_type('variation') ? $product->get_parent_id() : 0;
+
+    if (in_array($product_id, $product_ids) || ($parent_id && in_array($parent_id, $product_ids))) {
+        $deadline = $settings['registration_deadline'] ?? '';
+        if (!empty($deadline)) {
+            $deadline_timestamp = strtotime($deadline);
+            $current_timestamp = current_time('timestamp');
+            if ($current_timestamp > $deadline_timestamp) {
+                wc_add_notice( 'O prazo para inscrições online encerrou.', 'error' );
+                return false;
+            }
+        }
+    }
+    return $passed;
+}
+add_filter( 'woocommerce_add_to_cart_validation', 'enfrute_validate_add_cart_deadline', 10, 3 );
