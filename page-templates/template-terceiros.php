@@ -65,108 +65,111 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
                 } elseif (!$coupon->is_valid()) {
                     $error = 'O cupom inserido é inválido, expirou ou atingiu o limite de uso.';
                 } else {
-                    // 1. Create WordPress User
-                $username = sanitize_user(current(explode('@', $email)), true);
-                // Ensure unique username
-                $append = 1;
-                $orig_username = $username;
-                while (username_exists($username)) {
-                    $username = $orig_username . $append;
-                    $append++;
-                }
-
-                $random_password = wp_generate_password(12, false);
-                $new_user_id = wp_create_user($username, $random_password, $email);
-
-                if (is_wp_error($new_user_id)) {
-                    $error = 'Erro ao criar usuário: ' . $new_user_id->get_error_message();
-                } else {
-                    // Update user meta
-                    update_user_meta($new_user_id, 'first_name', $first_name);
-                    update_user_meta($new_user_id, 'last_name', $last_name);
-                    update_user_meta($new_user_id, 'billing_first_name', $first_name);
-                    update_user_meta($new_user_id, 'billing_last_name', $last_name);
-                    update_user_meta($new_user_id, 'billing_email', $email);
-                    update_user_meta($new_user_id, 'billing_cpf', $cpf);
-                    update_user_meta($new_user_id, '_billing_cpf', $cpf);
-                    update_user_meta($new_user_id, 'billing_phone', $phone);
-                    
-                    update_user_meta($new_user_id, 'billing_address_1', $address_1);
-                    update_user_meta($new_user_id, 'billing_number', $number);
-                    update_user_meta($new_user_id, 'billing_neighborhood', $neighborhood);
-                    update_user_meta($new_user_id, 'billing_city', $city);
-                    update_user_meta($new_user_id, 'billing_state', $state);
-                    update_user_meta($new_user_id, 'billing_postcode', $postcode);
-                    update_user_meta($new_user_id, 'billing_country', 'BR');
-
-                    // Set standard user role (customer)
-                    $new_user = new WP_User($new_user_id);
-                    $new_user->set_role('customer');
-
-                    // 2. Create WooCommerce Order
-                    try {
-                        $order = wc_create_order(array(
-                            'customer_id' => $new_user_id,
-                        ));
-
-                        // Add product to order
-                        $product = wc_get_product($product_id);
-                        if ($product) {
-                            $item_id = $order->add_product($product, 1);
-                            
-                            // Set billing address on order
-                            $address = array(
-                                'first_name' => $first_name,
-                                'last_name'  => $last_name,
-                                'email'      => $email,
-                                'phone'      => $phone,
-                                'address_1'  => $address_1,
-                                'city'       => $city,
-                                'state'      => $state,
-                                'postcode'   => $postcode,
-                                'country'    => 'BR'
-                            );
-                            $order->set_address($address, 'billing');
-                            
-                            // Add custom metas to order
-                            $order->update_meta_data('_billing_cpf', $cpf);
-                            $order->update_meta_data('_billing_number', $number);
-                            $order->update_meta_data('_billing_neighborhood', $neighborhood);
-
-                            // Calculate totals BEFORE setting fee so base totals are generated
-                            $order->calculate_totals();
-
-                            // 3. APPLY COUPON INSTEAD OF ZEROING AUTOMATICALLY
-                            $applied = $order->apply_coupon($coupon_code);
-                            if (is_wp_error($applied)) {
-                                throw new Exception($applied->get_error_message());
-                            }
-
-                            $order->calculate_totals();
-
-                            // Update status
-                            if ($order->get_total() == 0) {
-                                $order->update_status('completed', 'Inscrição realizada por Inscritor de Terceiros com cupom integral.');
-                            } else {
-                                $order->update_status('pending', 'Inscrição realizada por Inscritor de Terceiros. Cupom aplicado mas saldo não zerou.');
-                            }
-
-                            $message = 'Inscrição para <strong>' . esc_html($first_name . ' ' . $last_name) . '</strong> criada com sucesso! O pedido e a conta foram gerados.';
-                            
-                            // Send new account email
-                            wp_new_user_notification($new_user_id, null, 'both');
-                            
-                            // Reset vars so the form is clean for the next one
-                            $_POST = array(); 
-                            
-                        } else {
-                            $error = 'Produto inválido selecionado.';
+                    $product = wc_get_product($product_id);
+                    if (!$product) {
+                        $error = 'Produto inválido selecionado.';
+                    } else {
+                        // 1. Create WordPress User
+                        $username = sanitize_user(current(explode('@', $email)), true);
+                        $append = 1;
+                        $orig_username = $username;
+                        while (username_exists($username)) {
+                            $username = $orig_username . $append;
+                            $append++;
                         }
-                    } catch (Exception $e) {
-                        $error = 'Erro ao processar o pedido: ' . $e->getMessage();
+
+                        $random_password = wp_generate_password(12, false);
+                        $new_user_id = wp_create_user($username, $random_password, $email);
+
+                        if (is_wp_error($new_user_id)) {
+                            $error = 'Erro ao criar usuário: ' . $new_user_id->get_error_message();
+                        } else {
+                            // Update user meta
+                            update_user_meta($new_user_id, 'first_name', $first_name);
+                            update_user_meta($new_user_id, 'last_name', $last_name);
+                            update_user_meta($new_user_id, 'billing_first_name', $first_name);
+                            update_user_meta($new_user_id, 'billing_last_name', $last_name);
+                            update_user_meta($new_user_id, 'billing_email', $email);
+                            update_user_meta($new_user_id, 'billing_cpf', $cpf);
+                            update_user_meta($new_user_id, '_billing_cpf', $cpf);
+                            update_user_meta($new_user_id, 'billing_phone', $phone);
+                            
+                            update_user_meta($new_user_id, 'billing_address_1', $address_1);
+                            update_user_meta($new_user_id, 'billing_number', $number);
+                            update_user_meta($new_user_id, 'billing_neighborhood', $neighborhood);
+                            update_user_meta($new_user_id, 'billing_city', $city);
+                            update_user_meta($new_user_id, 'billing_state', $state);
+                            update_user_meta($new_user_id, 'billing_postcode', $postcode);
+                            update_user_meta($new_user_id, 'billing_country', 'BR');
+
+                            // Set standard user role (customer)
+                            $new_user = new WP_User($new_user_id);
+                            $new_user->set_role('customer');
+
+                            // 2. Create WooCommerce Order
+                            try {
+                                $order = wc_create_order(array(
+                                    'customer_id' => $new_user_id,
+                                ));
+
+                                $item_id = $order->add_product($product, 1);
+                                
+                                // Set billing address on order
+                                $address = array(
+                                    'first_name' => $first_name,
+                                    'last_name'  => $last_name,
+                                    'email'      => $email,
+                                    'phone'      => $phone,
+                                    'address_1'  => $address_1,
+                                    'city'       => $city,
+                                    'state'      => $state,
+                                    'postcode'   => $postcode,
+                                    'country'    => 'BR'
+                                );
+                                $order->set_address($address, 'billing');
+                                
+                                // Add custom metas to order
+                                $order->update_meta_data('_billing_cpf', $cpf);
+                                $order->update_meta_data('_billing_number', $number);
+                                $order->update_meta_data('_billing_neighborhood', $neighborhood);
+
+                                // Calculate totals BEFORE setting fee so base totals are generated
+                                $order->calculate_totals();
+
+                                // 3. APPLY COUPON INSTEAD OF ZEROING AUTOMATICALLY
+                                $applied = $order->apply_coupon($coupon_code);
+                                if (is_wp_error($applied)) {
+                                    throw new Exception($applied->get_error_message());
+                                }
+
+                                $order->calculate_totals();
+
+                                // Update status
+                                if ($order->get_total() == 0) {
+                                    $order->update_status('completed', 'Inscrição realizada por Inscritor de Terceiros com cupom integral.');
+                                } else {
+                                    $order->update_status('pending', 'Inscrição realizada por Inscritor de Terceiros. Cupom aplicado mas saldo não zerou.');
+                                }
+
+                                $message = 'Inscrição para <strong>' . esc_html($first_name . ' ' . $last_name) . '</strong> criada com sucesso! O pedido e a conta foram gerados.';
+                                
+                                // Send new account email
+                                wp_new_user_notification($new_user_id, null, 'both');
+                                
+                                // Reset vars so the form is clean for the next one
+                                $_POST = array(); 
+                                
+                            } catch (Exception $e) {
+                                $error = 'Erro ao processar o pedido: ' . $e->getMessage();
+                                // Rollback: delete the created user
+                                if (!function_exists('wp_delete_user')) {
+                                    require_once(ABSPATH . 'wp-admin/includes/user.php');
+                                }
+                                wp_delete_user($new_user_id);
+                            }
+                        }
                     }
                 }
-            }
             }
         }
     }
