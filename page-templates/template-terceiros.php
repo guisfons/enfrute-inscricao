@@ -151,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
                                     $order->update_status('pending', 'Inscrição realizada por Inscritor de Terceiros. Cupom aplicado mas saldo não zerou.');
                                 }
 
+                                $receipt_url = $order->get_checkout_order_received_url();
                                 $message = 'Inscrição para <strong>' . esc_html($first_name . ' ' . $last_name) . '</strong> criada com sucesso! O pedido e a conta foram gerados.';
+                                $message .= '<br><br><a href="' . esc_url($receipt_url) . '" target="_blank" class="btn btn-success"><i class="bi bi-printer"></i> Imprimir Comprovante</a>';
                                 
                                 // Send new account email
                                 wp_new_user_notification($new_user_id, null, 'both');
