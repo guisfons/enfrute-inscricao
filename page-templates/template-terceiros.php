@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
 
         // Validation
         if (empty($first_name) || empty($last_name) || empty($email) || empty($cpf) || empty($product_id) || empty($coupon_code)) {
-            $error = 'Por favor, preencha os campos obrigatórios (Nome, Sobrenome, E-mail, CPF, Categoria e Cupom).';
+            $error = 'Por favor, preencha os campos obrigatórios (Nome, Sobrenome, E-mail, Documento, Categoria e Cupom).';
         } elseif (email_exists($email)) {
             $error = 'Este e-mail já está cadastrado.';
         } else {
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
             }
 
             if ($cpf_exists) {
-                $error = 'Este CPF já está cadastrado em outra conta.';
+                $error = 'Este Documento (CPF/CNPJ/Passaporte) já está cadastrado em outra conta.';
             } else {
                 // Valida o cupom antes de criar o usuário e o pedido
                 $coupon = new WC_Coupon($coupon_code);
@@ -217,11 +217,21 @@ function enfrute_post_val($key) {
 
                         <div class="row mb-3">
                             <div class="col-md-6">
+                                <label for="nacionalidade" class="form-label">Nacionalidade *</label>
+                                <select class="form-select" id="nacionalidade" name="nacionalidade" required>
+                                    <option value="br" <?php selected(enfrute_post_val('nacionalidade'), 'br'); ?>>Brasileiro(a)</option>
+                                    <option value="estrangeiro" <?php selected(enfrute_post_val('nacionalidade'), 'estrangeiro'); ?>>Estrangeiro(a)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label for="email" class="form-label">E-mail *</label>
                                 <input type="email" class="form-control" id="email" name="email" required value="<?php echo enfrute_post_val('email'); ?>">
                             </div>
                             <div class="col-md-6">
-                                <label for="cpf" class="form-label">CPF *</label>
+                                <label for="cpf" class="form-label" id="label_documento">CPF / CNPJ *</label>
                                 <input type="text" class="form-control" id="cpf" name="cpf" required placeholder="000.000.000-00" value="<?php echo enfrute_post_val('cpf'); ?>">
                             </div>
                         </div>
@@ -366,7 +376,34 @@ function enfrute_post_val($key) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>
 jQuery(document).ready(function($){
-    if($('#cpf').length) { $('#cpf').mask('000.000.000-00'); }
+    var maskBehavior = function (val) {
+      return val.replace(/\D/g, '').length > 11 ? '00.000.000/0000-00' : '000.000.000-009';
+    },
+    options = {
+      onKeyPress: function(val, e, field, options) {
+          field.mask(maskBehavior.apply({}, arguments), options);
+      }
+    };
+
+    function updateDocumentField() {
+        var nac = $('#nacionalidade').val();
+        var docInput = $('#cpf');
+        var docLabel = $('#label_documento');
+        
+        docInput.unmask();
+        if (nac === 'br') {
+            docLabel.text('CPF / CNPJ *');
+            docInput.attr('placeholder', '000.000.000-00');
+            docInput.mask(maskBehavior, options);
+        } else {
+            docLabel.text('Passaporte / Documento *');
+            docInput.attr('placeholder', 'Número do Passaporte');
+        }
+    }
+
+    $('#nacionalidade').on('change', updateDocumentField);
+    updateDocumentField();
+
     if($('#phone').length) { $('#phone').mask('(00) 00000-0000'); }
     if($('#postcode').length) { $('#postcode').mask('00000-000'); }
 });
