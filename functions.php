@@ -61,6 +61,7 @@ function inscricao_enfrute_register_templates($post_templates, $theme, $post, $p
         $post_templates['page-templates/template-article-detail.php'] = 'Detalhes do Artigo (Review)';
         $post_templates['page-templates/template-home-inscription.php'] = 'Inscrição - Início';
         $post_templates['page-templates/template-terceiros.php'] = 'Inscrição de Terceiros';
+        $post_templates['page-templates/template-certificados.php'] = 'Baixar Certificado';
 
     }
 
@@ -954,3 +955,4 @@ function enfrute_inscritor_wc_login_redirect( $redirect, $user ) {
     return $redirect;
 }
 add_filter( 'woocommerce_login_redirect', 'enfrute_inscritor_wc_login_redirect', 10, 2 );
+
