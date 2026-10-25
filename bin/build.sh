@@ -14,5 +14,5 @@ fi
 for f in style.css functions.php index.php inc/sciflow-integration.php; do
   unzip -l "$OUT" | grep -q "enfrute-inscricao/$f" || { echo "ERRO: $f ausente" >&2; exit 1; }
 done
-sha256sum "$OUT" > "$OUT.sha256"
+( cd "$(dirname "$OUT")" && sha256sum "$(basename "$OUT")" > "$(basename "$OUT").sha256" )
 echo "OK $OUT ($(unzip -l "$OUT" | tail -1 | awk '{print $2}') arquivos)"
