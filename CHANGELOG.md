@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-10-25
+### Correções
+- build: checksum com nome do arquivo sem caminho
+
+
 ## 1.1.0 — 2026-10-25
 ### Segurança
 - **Detalhe do trabalho:** visitantes anônimos podiam ver trabalhos sem revisor atribuído (ID 0 = meta padrão 0). O acesso agora passa por `sciflow_can_view_submission()`, com escopo por evento.
