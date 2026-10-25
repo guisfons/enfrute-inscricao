@@ -3,6 +3,14 @@
  * Template Name: Listagem de Submissões
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 get_header();
 
 $user_id = get_current_user_id();
@@ -76,7 +84,7 @@ if ($query->have_posts()) {
                 <?php esc_html_e('Meus Resumos', 'enfrute'); ?>
             </h1>
             <?php if (!$deadline_passed): ?>
-            <a href="<?php echo esc_url(home_url('/submissao')); ?>" class="sciflow-btn sciflow-btn--primary">
+            <a href="<?php echo esc_url(inscricao_enfrute_page_url('submission', '/submissao')); ?>" class="sciflow-btn sciflow-btn--primary">
                 <?php esc_html_e('Nova Submissão', 'enfrute'); ?>
             </a>
             <?php else: ?>
@@ -118,7 +126,7 @@ if ($query->have_posts()) {
         $query->the_post();
         $post_id = get_the_ID();
         $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-        $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+        $event_name = inscricao_enfrute_event_label($event_slug);
         $post_status = get_post_status();
         $date = get_the_date('d/m/Y');
 
@@ -181,7 +189,7 @@ if ($query->have_posts()) {
                             <td>
                                 <div class="d-flex align-items-center">
                                     <i
-                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-primary' : 'bi-journal-text sf-text-accent'; ?> me-2"></i>
                                     <span class="small fw-semibold">
                                         <?php echo esc_html($event_name); ?>
                                     </span>
@@ -199,7 +207,7 @@ if ($query->have_posts()) {
                             </td>
                             <td class="pe-4 text-end">
                                 <?php if (in_array($sciflow_status, array('rascunho', 'em_correcao', 'aguardando_pagamento', 'aprovado_com_consideracoes', 'reprovado'), true)): ?>
-                                <a href="<?php echo esc_url(add_query_arg('edit_id', $post_id, home_url('/submissao'))); ?>"
+                                <a href="<?php echo esc_url(add_query_arg('edit_id', $post_id, inscricao_enfrute_page_url('submission', '/submissao'))); ?>"
                                     class="btn btn-sm btn-light rounded-pill px-3 fw-bold sciflow-table-edit">
                                     <i class="bi bi-pencil-square me-1"></i>
                                     <?php echo in_array($sciflow_status, array('em_correcao', 'aprovado_com_consideracoes', 'reprovado')) ? 'Alterar' : 'Ver/Editar'; ?>
@@ -207,8 +215,7 @@ if ($query->have_posts()) {
                                 <?php
         else: ?>
                                 <?php
-            $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-            $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo');
+            $detail_url = inscricao_enfrute_page_url('article_detail', '/avaliar-artigo');
             $view_url = add_query_arg('article_id', $post_id, $detail_url);
 ?>
                                 <a href="<?php echo esc_url($view_url); ?>"
@@ -237,7 +244,7 @@ else: ?>
                 Você ainda não iniciou a submissão de nenhum trabalho científico.
             </p>
             <?php if (!$deadline_passed): ?>
-            <a href="<?php echo esc_url(home_url('/submissao')); ?>"
+            <a href="<?php echo esc_url(inscricao_enfrute_page_url('submission', '/submissao')); ?>"
                 class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
                 Nova Submissão
             </a>

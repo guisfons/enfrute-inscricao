@@ -7,18 +7,24 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 $article_id = isset($_GET['article_id']) ? absint($_GET['article_id']) : 0;
 $post = get_post($article_id);
 
 if (!$post || !in_array($post->post_type, array('enfrute_trabalhos', 'semco_trabalhos'))) {
-    wp_redirect(home_url());
+    wp_safe_redirect(home_url());
     exit;
 }
 
 $current_user_id = get_current_user_id();
-$is_editor = current_user_can('manage_sciflow');
-$is_reviewer = (int)get_post_meta($article_id, '_sciflow_reviewer_id', true) === $current_user_id;
-$is_author = (int)get_post_meta($article_id, '_sciflow_author_id', true) === $current_user_id;
+// Every comparison requires a real logged-in user: anonymous visitors have
+// ID 0, which used to match unset reviewer/author meta.
+$is_editor = $current_user_id > 0 && SciFlow_Security::can_manage_submission($article_id, $current_user_id);
+$is_reviewer = SciFlow_Security::is_assigned_reviewer($article_id, $current_user_id);
+$is_author = SciFlow_Security::is_author($article_id, $current_user_id);
 
 // Authorization check
 $current_user = wp_get_current_user();
@@ -28,39 +34,16 @@ $user_roles = (array)$current_user->roles;
 $is_semco_role = in_array('sciflow_semco_editor', $user_roles) || in_array('sciflow_semco_revisor', $user_roles);
 $is_enfrute_role = in_array('sciflow_enfrute_editor', $user_roles) || in_array('sciflow_enfrute_revisor', $user_roles);
 
-$can_view = false;
+$can_view = sciflow_can_view_submission($article_id, $current_user_id);
 
-// 1. Editor/Admin can view everything EXCEPT their own article if they are only an editor and not admin
-    // If user is editor/admin, they can view regardless of being author or not
-    if ($is_editor || current_user_can('administrator')) {
-        $can_view = true;
-    }
-
-// 2. Reviewer assigned to this article
-if ($is_reviewer) {
-    $can_view = true;
+if (!$can_view && !is_user_logged_in()) {
+    wp_safe_redirect(wp_login_url(add_query_arg('article_id', $article_id, get_permalink(get_queried_object_id()))));
+    exit;
 }
 
-// 3. Author can view own article
-if ($is_author) {
-    $can_view = true;
-}
-
-// Event specific roles (ONLY PUBLISHED)
-if ($post->post_status === 'publish') {
-    $sciflow_status_meta = get_post_meta($article_id, '_sciflow_status', true);
-    if ($sciflow_status_meta !== 'rascunho') {
-        if ($is_semco_role && $post->post_type === 'semco_trabalhos') {
-            $can_view = true;
-        }
-        if ($is_enfrute_role && $post->post_type === 'enfrute_trabalhos') {
-            $can_view = true;
-        }
-    }
-}
 
 if (!$can_view) {
-    wp_redirect(home_url());
+    wp_safe_redirect(home_url());
     exit;
 }
 
@@ -70,7 +53,7 @@ get_header();
 
 // Data fetching
 $event_slug = get_post_meta($article_id, '_sciflow_event', true);
-$event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+$event_name = inscricao_enfrute_event_label($event_slug);
 $sciflow_status = get_post_meta($article_id, '_sciflow_status', true) ?: 'rascunho';
 $coauthors = get_post_meta($article_id, '_sciflow_coauthors', true) ?: array();
 $keywords = get_post_meta($article_id, '_sciflow_keywords', true) ?: array();
@@ -107,20 +90,20 @@ if (!empty($poster_deadline_str)) {
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">
                     <?php if ($is_editor): ?>
-                    <a href="<?php echo esc_url(home_url('/editor/dashboard/')); ?>"
-                        class="text-decoration-none text-success fw-bold">Dashboard</a>
+                    <a href="<?php echo esc_url(inscricao_enfrute_page_url('editor_dashboard', '/editor/dashboard/')); ?>"
+                        class="text-decoration-none text-primary fw-bold">Dashboard</a>
                     <?php
 elseif ($is_reviewer): ?>
-                    <a href="<?php echo esc_url(home_url('/revisor/dashboard/')); ?>"
-                        class="text-decoration-none text-success fw-bold">Minhas Revisões</a>
+                    <a href="<?php echo esc_url(inscricao_enfrute_page_url('reviewer_dashboard', '/revisor/dashboard/')); ?>"
+                        class="text-decoration-none text-primary fw-bold">Minhas Revisões</a>
                     <?php
 elseif ($is_semco_role || $is_enfrute_role): ?>
-                    <a href="<?php echo esc_url(home_url('/meus-artigos')); ?>"
-                        class="text-decoration-none text-success fw-bold">Meus Resumos</a>
+                    <a href="<?php echo esc_url(inscricao_enfrute_page_url('author_dashboard', '/meus-artigos')); ?>"
+                        class="text-decoration-none text-primary fw-bold">Meus Resumos</a>
                     <?php
 else: ?>
-                    <a href="<?php echo esc_url(home_url('/meus-trabalhos')); ?>"
-                        class="text-decoration-none text-success fw-bold">Meus Resumos</a>
+                    <a href="<?php echo esc_url(inscricao_enfrute_page_url('author_dashboard', '/meus-trabalhos')); ?>"
+                        class="text-decoration-none text-primary fw-bold">Meus Resumos</a>
                     <?php
 endif; ?>
                 </li>
@@ -143,7 +126,7 @@ echo esc_html(str_pad($visual_id, 4, '0', STR_PAD_LEFT));
                     <div class="card-body p-4 p-md-5">
                         <div class="d-flex align-items-center gap-2 mb-3">
                             <span
-                                class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold text-uppercase fs-xs">
+                                class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold text-uppercase fs-xs">
                                 <i class="bi bi-journal-bookmark me-1"></i>
                                 <?php echo esc_html($event_name); ?>
                             </span>
@@ -203,7 +186,7 @@ elseif (!empty($coauthors)): ?>
                                 <ul class="list-unstyled mb-0">
                                     <?php foreach ($coauthors as $ca): ?>
                                     <li class="small text-muted mb-2">
-                                        <i class="bi bi-person-check me-2 text-success"></i>
+                                        <i class="bi bi-person-check me-2 text-primary"></i>
                                         <strong>
                                             <?php echo esc_html($ca['name']); ?>
                                         </strong>
@@ -330,8 +313,7 @@ endif; ?>
     endif; ?>
 
                         <?php
-    $poster_pages = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'template-poster-upload.php', 'number' => 1, 'post_status' => 'publish'));
-    $poster_upload_url = !empty($poster_pages) ? get_permalink($poster_pages[0]->ID) : home_url('/');
+    $poster_upload_url = inscricao_enfrute_page_url('poster_upload', '/');
 ?>
                         <?php if ($sciflow_status === 'poster_em_correcao'): ?>
                         <a href="<?php echo esc_url(add_query_arg('article_id', $article_id, $poster_upload_url)); ?>"
@@ -410,7 +392,7 @@ if ($is_editor && !in_array($sciflow_status, array('poster_em_correcao', 'apto_p
 
                         <?php if ($sciflow_status === 'aguardando_pagamento' && current_user_can('administrator')): ?>
                         <form id="sciflow-confirm-payment-form" class="mb-3 border-bottom pb-3">
-                            <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill fw-bold">Confirmar
+                            <button type="submit" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold">Confirmar
                                 Pagamento</button>
                             <input type="hidden" name="post_id" value="<?php echo $article_id; ?>">
                             <input type="hidden" name="action" value="sciflow_confirm_payment_admin">
@@ -430,7 +412,7 @@ if ($is_editor && !in_array($sciflow_status, array('poster_em_correcao', 'apto_p
                             <textarea name="notes" class="form-control form-control-sm mb-2" rows="3"
                                 placeholder="Observações..."></textarea>
                             <button type="submit"
-                                class="btn btn-success btn-sm w-100 rounded-pill fw-bold">Registrar</button>
+                                class="btn btn-primary btn-sm w-100 rounded-pill fw-bold">Registrar</button>
                             <input type="hidden" name="post_id" value="<?php echo $article_id; ?>">
                             <input type="hidden" name="action" value="sciflow_editorial_decision">
                         </form>
@@ -448,7 +430,7 @@ if ($is_editor && !in_array($sciflow_status, array('poster_em_correcao', 'apto_p
                                 placeholder="Notas para o autor..." rows="3"></textarea>
                             <div class="d-flex flex-column gap-2">
                                 <button
-                                    class="btn btn-success btn-sm w-100 rounded-pill fw-bold sciflow-poster-decision-btn"
+                                    class="btn btn-primary btn-sm w-100 rounded-pill fw-bold sciflow-poster-decision-btn"
                                     data-decision="approve_poster">Aprovar Pôster</button>
                                 <button
                                     class="btn btn-warning btn-sm w-100 rounded-pill fw-bold sciflow-poster-decision-btn"
@@ -577,10 +559,9 @@ if ($poster_id || $show_upload):
     $poster_url = $poster_id ? wp_get_attachment_url($poster_id) : '';
     $poster_file = $poster_id ? get_attached_file($poster_id) : '';
     $poster_size = $poster_file && file_exists($poster_file) ? size_format(filesize($poster_file)) : 'N/A';
-    $upload_pg = get_pages(['meta_key' => '_wp_page_template', 'meta_value' => 'template-poster-upload.php', 'number' => 1]);
-    $upload_url = !empty($upload_pg) ? get_permalink($upload_pg[0]->ID) : home_url('/');
+    $upload_url = inscricao_enfrute_page_url('poster_upload', '/');
 ?>
-                <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-success border-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-primary border-4">
                     <div class="card-body p-4">
                         <h3 class="h6 fw-bold text-dark mb-3"><i
                                 class="bi bi-file-earmark-pdf text-danger me-2"></i>Pôster Arquivado</h3>
@@ -595,10 +576,10 @@ if ($poster_id || $show_upload):
                         </div>
                         <div class="d-flex gap-2">
                             <a href="<?php echo esc_url($poster_url); ?>" target="_blank"
-                                class="btn btn-success btn-sm flex-grow-1 rounded-pill fw-bold">Ver</a>
+                                class="btn btn-primary btn-sm flex-grow-1 rounded-pill fw-bold">Ver</a>
                             <?php if ($show_upload): ?>
                             <a href="<?php echo esc_url(add_query_arg('article_id', $article_id, $upload_url)); ?>"
-                                class="btn btn-outline-success btn-sm flex-grow-1 rounded-pill fw-bold">Substituir</a>
+                                class="btn btn-outline-primary btn-sm flex-grow-1 rounded-pill fw-bold">Substituir</a>
                             <?php
         endif; ?>
                         </div>
@@ -651,7 +632,7 @@ if ($is_author && in_array($sciflow_status, $editable_statuses)): ?>
                     class="card border-0 shadow-sm rounded-4 border-start border-warning border-4 mb-4 text-center p-4">
                     <i class="bi bi-pencil-square display-6 text-warning mb-3"></i>
                     <h3 class="h6 fw-bold text-dark">Edição Aberta</h3>
-                    <a href="<?php echo esc_url(add_query_arg('edit_id', $article_id, home_url('/submissao'))); ?>"
+                    <a href="<?php echo esc_url(add_query_arg('edit_id', $article_id, inscricao_enfrute_page_url('submission', '/submissao'))); ?>"
                         class="btn btn-warning btn-sm w-100 rounded-pill fw-bold">Editar Trabalho</a>
                 </div>
                 <?php

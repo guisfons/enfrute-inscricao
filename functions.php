@@ -3,6 +3,13 @@
  * Theme functions and definitions
  */
 
+if (!defined('INSCRICAO_ENFRUTE_VERSION')) {
+    define('INSCRICAO_ENFRUTE_VERSION', '1.1.0');
+}
+
+require_once get_template_directory() . '/inc/sciflow-integration.php';
+require_once get_template_directory() . '/inc/branding.php';
+
 if (!function_exists('inscricao_enfrute_setup')):
     function inscricao_enfrute_setup()
     {
@@ -11,6 +18,11 @@ if (!function_exists('inscricao_enfrute_setup')):
         add_theme_support('html5', array('search-form', 'comment-form', 'comment-list', 'gallery', 'caption'));
         add_theme_support('customize-selective-refresh-widgets');
         add_theme_support('woocommerce');
+        add_theme_support('custom-logo', array('height' => 80, 'width' => 240, 'flex-height' => true, 'flex-width' => true));
+        // Tells SciFlow WP that this theme ships its page templates.
+        add_theme_support('sciflow');
+
+        load_theme_textdomain('inscricao-enfrute', get_template_directory() . '/languages');
 
         register_nav_menus(array(
             'primary' => __('Primary Menu', 'inscricao-enfrute'),
@@ -30,21 +42,30 @@ add_action('after_setup_theme', 'inscricao_enfrute_setup');
 
 function inscricao_enfrute_scripts()
 {
-    // Bootstrap 5 CSS
-    wp_enqueue_style('bootstrap-css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css', array(), '5.3.2');
+    $vendor = get_template_directory_uri() . '/assets/vendor';
 
-    // Bootstrap Icons
-    wp_enqueue_style('bootstrap-icons', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css', array(), '1.11.2');
+    // Bootstrap 5 CSS (served locally — see assets/vendor/README.md)
+    wp_enqueue_style('bootstrap-css', $vendor . '/bootstrap/bootstrap.min.css', array(), '5.3.2');
 
-    wp_enqueue_style('inscricao-enfrute-style', get_stylesheet_uri(), array(), '1.0.0');
+    // Bootstrap Icons (same handle as the plugin: registered only once)
+    wp_enqueue_style('bootstrap-icons', $vendor . '/bootstrap-icons/bootstrap-icons.min.css', array(), '1.11.3');
+
+    $brand_dep = wp_style_is('sciflow-brand', 'registered') ? array('sciflow-brand') : array();
+    wp_enqueue_style('inscricao-enfrute-style', get_stylesheet_uri(), $brand_dep, INSCRICAO_ENFRUTE_VERSION);
 
     // Enqueue compiled assets (ensure it loads after bootstrap)
-    wp_enqueue_style('inscricao-enfrute-main', get_template_directory_uri() . '/assets/css/main.css', array('bootstrap-css'), '1.0.0');
+    wp_enqueue_style('inscricao-enfrute-main', get_template_directory_uri() . '/assets/css/main.css', array('bootstrap-css'), INSCRICAO_ENFRUTE_VERSION);
 
     // Bootstrap 5 JS Bundle
-    wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.2', true);
+    wp_enqueue_script('bootstrap-js', $vendor . '/bootstrap/bootstrap.bundle.min.js', array('jquery'), '5.3.2', true);
 
-    wp_enqueue_script('inscricao-enfrute-js', get_template_directory_uri() . '/assets/js/main.js', array('jquery', 'bootstrap-js'), '1.0.0', true);
+    wp_register_script('jquery-mask', $vendor . '/jquery-mask/jquery.mask.min.js', array('jquery'), '1.14.16', true);
+
+    wp_enqueue_script('inscricao-enfrute-js', get_template_directory_uri() . '/assets/js/main.js', array('jquery', 'bootstrap-js'), INSCRICAO_ENFRUTE_VERSION, true);
+
+    if (function_exists('is_checkout') && is_checkout()) {
+        wp_enqueue_script('jquery-mask');
+    }
 }
 add_action('wp_enqueue_scripts', 'inscricao_enfrute_scripts');
 
@@ -135,7 +156,7 @@ add_filter('wp_nav_menu_args', 'inscricao_enfrute_nav_menu_args');
 function enfrute_add_brazilian_fields($fields)
 {
     $fields['cpf'] = array(
-        'label' => __('CPF', 'enfrute'),
+        'label' => __('CPF', 'inscricao-enfrute'),
         'placeholder' => '000.000.000-00',
         'required' => false,
         'class' => array('form-row-wide', 'sciflow-brazil-field'),
@@ -144,7 +165,7 @@ function enfrute_add_brazilian_fields($fields)
     );
 
     $fields['cnpj'] = array(
-        'label' => __('CNPJ', 'enfrute'),
+        'label' => __('CNPJ', 'inscricao-enfrute'),
         'placeholder' => '00.000.000/0000-00',
         'required' => false,
         'class' => array('form-row-wide', 'sciflow-brazil-field'),
@@ -164,7 +185,7 @@ add_action('init', function () {
         woocommerce_blocks_register_checkout_field(
             array(
                 'id' => 'billing_cpf',
-                'label' => __('CPF', 'enfrute'),
+                'label' => __('CPF', 'inscricao-enfrute'),
                 'location' => 'address',
                 'type' => 'text',
                 'required' => false,
@@ -174,7 +195,7 @@ add_action('init', function () {
         woocommerce_blocks_register_checkout_field(
             array(
                 'id' => 'billing_cnpj',
-                'label' => __('CNPJ', 'enfrute'),
+                'label' => __('CNPJ', 'inscricao-enfrute'),
                 'location' => 'address',
                 'type' => 'text',
                 'required' => false,
@@ -224,7 +245,7 @@ function enfrute_validate_brazilian_fields()
         $cnpj = $_POST['billing_cnpj'] ?? '';
 
         if (empty($cpf) && empty($cnpj)) {
-            wc_add_notice(__('Por favor, preencha o CPF ou CNPJ para faturamento no Brasil.', 'enfrute'), 'error');
+            wc_add_notice(__('Por favor, preencha o CPF ou CNPJ para faturamento no Brasil.', 'inscricao-enfrute'), 'error');
         }
     }
 }
@@ -249,10 +270,9 @@ function enfrute_save_brazilian_fields($order_id)
  */
 function enfrute_checkout_js()
 {
-    if (!is_checkout())
+    if (!function_exists('is_checkout') || !is_checkout())
         return;
     ?>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
     <script type="text/javascript">
         jQuery(function ($) {
             function toggleBrazilFields() {
@@ -267,7 +287,6 @@ function enfrute_checkout_js()
                     }
                 }
 
-                console.log('Enfrute Checkout: Country is ' + (country || 'unknown'));
 
                 var $fields = $('.sciflow-brazil-field');
                 if (country === 'BR') {
@@ -284,6 +303,7 @@ function enfrute_checkout_js()
                 var $cpf = $('input[name="billing_cpf"], #billing_cpf, [id*="billing_cpf"]');
                 var $cnpj = $('input[name="billing_cnpj"], #billing_cnpj, [id*="billing_cnpj"]');
 
+                if (!$.fn.mask) return;
                 if ($cpf.length) $cpf.mask('000.000.000-00');
                 if ($cnpj.length) $cnpj.mask('00.000.000/0000-00');
             }
@@ -354,13 +374,13 @@ function enfrute_email_order_meta_fields($fields, $sent_to_admin, $order)
 {
     if ($order->get_meta('_billing_cpf')) {
         $fields['billing_cpf'] = array(
-            'label' => __('CPF', 'enfrute'),
+            'label' => __('CPF', 'inscricao-enfrute'),
             'value' => $order->get_meta('_billing_cpf'),
         );
     }
     if ($order->get_meta('_billing_cnpj')) {
         $fields['billing_cnpj'] = array(
-            'label' => __('CNPJ', 'enfrute'),
+            'label' => __('CNPJ', 'inscricao-enfrute'),
             'value' => $order->get_meta('_billing_cnpj'),
         );
     }
@@ -374,11 +394,11 @@ add_filter('woocommerce_admin_billing_fields', 'enfrute_admin_billing_fields');
 function enfrute_admin_billing_fields($fields)
 {
     $fields['cpf'] = array(
-        'label' => __('CPF', 'enfrute'),
+        'label' => __('CPF', 'inscricao-enfrute'),
         'show' => true,
     );
     $fields['cnpj'] = array(
-        'label' => __('CNPJ', 'enfrute'),
+        'label' => __('CNPJ', 'inscricao-enfrute'),
         'show' => true,
     );
     return $fields;
@@ -409,6 +429,11 @@ function enfrute_get_registration_product()
  */
 function enfrute_user_has_paid_registration($user_id = null)
 {
+    // The plugin owns this rule (setting "Exigir inscrição paga").
+    if (function_exists('sciflow_user_has_paid_registration')) {
+        return sciflow_user_has_paid_registration($user_id ? (int) $user_id : 0);
+    }
+
     if (!function_exists('wc_get_orders')) {
         return false;
     }
@@ -477,6 +502,9 @@ function enfrute_user_has_paid_registration($user_id = null)
  */
 function enfrute_get_inscription_home_url()
 {
+    if (function_exists('sciflow_get_page_url')) {
+        return sciflow_get_page_url('registration_home');
+    }
     $pages = get_pages(array(
         'meta_key'   => '_wp_page_template',
         'meta_value' => 'page-templates/template-home-inscription.php',
@@ -584,7 +612,7 @@ function enfrute_rename_bacs_gateway_title($title, $gateway_id)
             }
         }
         if ($has_backorder) {
-            return __('Solicitar Inscrição (Análise Manual/Reserva)', 'enfrute');
+            return __('Solicitar Inscrição (Análise Manual/Reserva)', 'inscricao-enfrute');
         }
     }
     return $title;
@@ -605,7 +633,7 @@ function enfrute_rename_bacs_gateway_desc($description, $gateway_id)
             }
         }
         if ($has_backorder) {
-            return __('Seu pedido será enviado para análise da equipe. Você receberá um e-mail com a confirmação após a aprovação manual.', 'enfrute');
+            return __('Seu pedido será enviado para análise da equipe. Você receberá um e-mail com a confirmação após a aprovação manual.', 'inscricao-enfrute');
         }
     }
     return $description;
@@ -629,7 +657,7 @@ function enfrute_backorder_button_text($button_text)
     }
 
     if ($has_backorder) {
-        return __('Enviar para Aprovação Manual', 'enfrute');
+        return __('Enviar para Aprovação Manual', 'inscricao-enfrute');
     }
 
     return $button_text;
@@ -654,7 +682,7 @@ function enfrute_backorder_checkout_notice()
 
     if ($has_backorder) {
         wc_print_notice(
-            __('Este item está disponível apenas mediante solicitação e aprovação externa. Por favor, finalize o pedido para que nossa equipe possa analisar sua inscrição.', 'enfrute'),
+            __('Este item está disponível apenas mediante solicitação e aprovação externa. Por favor, finalize o pedido para que nossa equipe possa analisar sua inscrição.', 'inscricao-enfrute'),
             'notice'
         );
     }
@@ -682,7 +710,7 @@ add_action('woocommerce_checkout_order_processed', 'enfrute_force_on_hold_for_ba
 function enfrute_force_on_hold_for_backorders($order_id, $posted_data, $order)
 {
     if (enfrute_order_has_backorder($order)) {
-        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'enfrute'));
+        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'inscricao-enfrute'));
         $order->save();
     }
 }
@@ -694,7 +722,7 @@ add_action('woocommerce_store_api_checkout_order_processed', 'enfrute_force_on_h
 function enfrute_force_on_hold_for_backorders_store_api($order)
 {
     if (enfrute_order_has_backorder($order)) {
-        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'enfrute'));
+        $order->update_status('on-hold', __('Pedido com item sob encomenda aguardando aprovação manual.', 'inscricao-enfrute'));
         $order->save();
     }
 }
@@ -740,7 +768,7 @@ function enfrute_revert_backorder_status_if_completed($order_id, $old_status, $n
     if (in_array($new_status, array('processing', 'completed'), true) && enfrute_order_has_backorder($order)) {
         // Remove action temporarily to avoid infinite loop
         remove_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99);
-        $order->update_status('on-hold', __('Status revertido: pedido com item sob encomenda aguarda aprovação manual.', 'enfrute'));
+        $order->update_status('on-hold', __('Status revertido: pedido com item sob encomenda aguarda aprovação manual.', 'inscricao-enfrute'));
         $order->save();
         add_action('woocommerce_order_status_changed', 'enfrute_revert_backorder_status_if_completed', 99, 4);
     }
@@ -757,8 +785,8 @@ function enfrute_backorder_thankyou_notice($order_id)
         return;
     }
     echo '<div class="woocommerce-info" style="margin-bottom:20px;border-left:4px solid #f0ad4e;background:#fff8e6;padding:16px;border-radius:6px;">';
-    echo '<strong>' . esc_html__('Solicitação de inscrição enviada!', 'enfrute') . '</strong><br>';
-    echo esc_html__('Seu pedido foi enviado para análise manual pela nossa equipe. Você receberá um e-mail assim que sua inscrição for aprovada. Não é necessário realizar nenhum pagamento agora.', 'enfrute');
+    echo '<strong>' . esc_html__('Solicitação de inscrição enviada!', 'inscricao-enfrute') . '</strong><br>';
+    echo esc_html__('Seu pedido foi enviado para análise manual pela nossa equipe. Você receberá um e-mail assim que sua inscrição for aprovada. Não é necessário realizar nenhum pagamento agora.', 'inscricao-enfrute');
     echo '</div>';
 }
 
@@ -924,7 +952,7 @@ function enfrute_validate_add_cart_deadline( $passed, $product_id, $quantity ) {
             $deadline_timestamp = strtotime($deadline);
             $current_timestamp = current_time('timestamp');
             if ($current_timestamp > $deadline_timestamp) {
-                wc_add_notice( 'O prazo para inscrições online encerrou.', 'error' );
+                wc_add_notice( __('O prazo para inscrições online encerrou.', 'inscricao-enfrute'), 'error' );
                 return false;
             }
         }
@@ -939,7 +967,7 @@ add_filter( 'woocommerce_add_to_cart_validation', 'enfrute_validate_add_cart_dea
 function enfrute_inscritor_wp_login_redirect( $redirect_to, $request, $user ) {
     if ( isset( $user->roles ) && is_array( $user->roles ) ) {
         if ( in_array( 'inscritor_terceiros', $user->roles ) ) {
-            return home_url( '/inscricao-de-terceiros/' );
+            return inscricao_enfrute_page_url( 'third_party', '/inscricao-de-terceiros/' );
         }
     }
     return $redirect_to;
@@ -949,10 +977,76 @@ add_filter( 'login_redirect', 'enfrute_inscritor_wp_login_redirect', 10, 3 );
 function enfrute_inscritor_wc_login_redirect( $redirect, $user ) {
     if ( isset( $user->roles ) && is_array( $user->roles ) ) {
         if ( in_array( 'inscritor_terceiros', $user->roles ) ) {
-            return home_url( '/inscricao-de-terceiros/' );
+            return inscricao_enfrute_page_url( 'third_party', '/inscricao-de-terceiros/' );
         }
     }
     return $redirect;
 }
 add_filter( 'woocommerce_login_redirect', 'enfrute_inscritor_wc_login_redirect', 10, 2 );
 
+/**
+ * Product/variation IDs that may be sold through the third-party form:
+ * the configured registration product and its variations.
+ *
+ * @return int[]
+ */
+function enfrute_get_registration_product_choices()
+{
+    $product = enfrute_get_registration_product();
+    if (!$product) {
+        return array();
+    }
+    if ($product->is_type('variable')) {
+        return array_map('absint', $product->get_children());
+    }
+    return array((int) $product->get_id());
+}
+
+/**
+ * Coupons reserved for "Inscritor de Terceiros" (tagged "inscritor" in any
+ * coupon taxonomy, or containing "inscritor" in the title/description),
+ * excluding expired and exhausted ones. Keyed by normalized code.
+ *
+ * @return array<string, WC_Coupon>
+ */
+function enfrute_get_inscritor_coupons()
+{
+    if (!class_exists('WC_Coupon')) {
+        return array();
+    }
+    $coupons = array();
+    $posts = get_posts(array(
+        'posts_per_page' => -1,
+        'post_type'      => 'shop_coupon',
+        'post_status'    => 'publish',
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ));
+    $taxonomies = get_object_taxonomies('shop_coupon');
+    foreach ($posts as $c_post) {
+        $is_inscritor = false;
+        foreach ($taxonomies as $tax) {
+            if (has_term('inscritor', $tax, $c_post->ID) || has_term('Inscritor', $tax, $c_post->ID)) {
+                $is_inscritor = true;
+                break;
+            }
+        }
+        if (!$is_inscritor && (stripos($c_post->post_excerpt, 'inscritor') !== false || stripos($c_post->post_title, 'inscritor') !== false)) {
+            $is_inscritor = true;
+        }
+        if (!$is_inscritor) {
+            continue;
+        }
+        $coupon = new WC_Coupon($c_post->ID);
+        $expiry = $coupon->get_date_expires();
+        if ($expiry && $expiry->getTimestamp() < time()) {
+            continue;
+        }
+        $limit = $coupon->get_usage_limit();
+        if ($limit > 0 && $coupon->get_usage_count() >= $limit) {
+            continue;
+        }
+        $coupons[wc_format_coupon_code($coupon->get_code())] = $coupon;
+    }
+    return $coupons;
+}

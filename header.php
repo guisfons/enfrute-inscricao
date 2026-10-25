@@ -13,9 +13,7 @@
     <header id="masthead" class="site-header">
         <div class="container sticky-header">
             <div class="site-branding">
-                <a href="https://www.enfrute.com">
-                    <img src="<?php echo get_template_directory_uri(); ?>/assets/images/logo.webp" alt="Logo">
-                </a>
+                <?php inscricao_enfrute_logo(); ?>
             </div>
 
             <nav id="site-navigation" class="main-navigation">
@@ -28,7 +26,7 @@
                 $product = enfrute_get_registration_product();
                 if ($product):
                     ?>
-                    <a href="<?php echo esc_url($product->add_to_cart_url()); ?>" class="btn-primary">INSCREVA-SE</a>
+                    <a href="<?php echo esc_url($product->add_to_cart_url()); ?>" class="btn-primary"><?php esc_html_e('INSCREVA-SE', 'inscricao-enfrute'); ?></a>
                 <?php endif; ?>
             </nav>
         </div>

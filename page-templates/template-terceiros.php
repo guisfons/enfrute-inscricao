@@ -3,6 +3,14 @@
  * Template Name: Inscrição de Terceiros
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (inscricao_enfrute_require('woocommerce')) {
+    return;
+}
+
 get_header();
 
 $user = wp_get_current_user();
@@ -24,25 +32,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
     if (!isset($_POST['terceiros_nonce']) || !wp_verify_nonce($_POST['terceiros_nonce'], 'terceiros_action')) {
         $error = 'Requisição inválida (nonce falhou).';
     } else {
-        $first_name = sanitize_text_field($_POST['first_name']);
-        $last_name = sanitize_text_field($_POST['last_name']);
-        $email = sanitize_email($_POST['email']);
-        $cpf = sanitize_text_field($_POST['cpf']);
-        $phone = sanitize_text_field($_POST['phone']);
+        $first_name = sanitize_text_field(wp_unslash($_POST['first_name'] ?? ''));
+        $last_name = sanitize_text_field(wp_unslash($_POST['last_name'] ?? ''));
+        $email = sanitize_email(wp_unslash($_POST['email'] ?? ''));
+        $cpf = sanitize_text_field(wp_unslash($_POST['cpf'] ?? ''));
+        $phone = sanitize_text_field(wp_unslash($_POST['phone'] ?? ''));
         
-        $address_1 = sanitize_text_field($_POST['address_1']);
-        $number = sanitize_text_field($_POST['number']);
-        $neighborhood = sanitize_text_field($_POST['neighborhood']);
-        $city = sanitize_text_field($_POST['city']);
-        $state = sanitize_text_field($_POST['state']);
-        $postcode = sanitize_text_field($_POST['postcode']);
+        $address_1 = sanitize_text_field(wp_unslash($_POST['address_1'] ?? ''));
+        $number = sanitize_text_field(wp_unslash($_POST['number'] ?? ''));
+        $neighborhood = sanitize_text_field(wp_unslash($_POST['neighborhood'] ?? ''));
+        $city = sanitize_text_field(wp_unslash($_POST['city'] ?? ''));
+        $state = sanitize_text_field(wp_unslash($_POST['state'] ?? ''));
+        $postcode = sanitize_text_field(wp_unslash($_POST['postcode'] ?? ''));
         
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
-        $coupon_code = isset($_POST['coupon_code']) ? sanitize_text_field($_POST['coupon_code']) : '';
+        $coupon_code = isset($_POST['coupon_code']) ? wc_format_coupon_code(sanitize_text_field(wp_unslash($_POST['coupon_code']))) : '';
 
         // Validation
         if (empty($first_name) || empty($last_name) || empty($email) || empty($cpf) || empty($product_id) || empty($coupon_code)) {
             $error = 'Por favor, preencha os campos obrigatórios (Nome, Sobrenome, E-mail, Documento, Categoria e Cupom).';
+        } elseif (!is_email($email)) {
+            $error = 'E-mail inválido.';
+        } elseif (!in_array($product_id, enfrute_get_registration_product_choices(), true)) {
+            // Only the configured registration product (or its variations) may be sold here;
+            // other products could grant roles such as speaker on order completion.
+            $error = 'Categoria de inscrição inválida.';
+        } elseif (!in_array($coupon_code, array_keys(enfrute_get_inscritor_coupons()), true)) {
+            $error = 'Este cupom não está disponível para inscrição de terceiros.';
         } elseif (email_exists($email)) {
             $error = 'Este e-mail já está cadastrado.';
         } else {
@@ -153,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
 
                                 $receipt_url = $order->get_checkout_order_received_url();
                                 $message = 'Inscrição para <strong>' . esc_html($first_name . ' ' . $last_name) . '</strong> criada com sucesso! O pedido e a conta foram gerados.';
-                                $message .= '<br><br><a href="' . esc_url($receipt_url) . '" target="_blank" class="btn btn-success"><i class="bi bi-printer"></i> Imprimir Comprovante</a>';
+                                $message .= '<br><br><a href="' . esc_url($receipt_url) . '" target="_blank" class="btn btn-primary"><i class="bi bi-printer"></i> Imprimir Comprovante</a>';
                                 
                                 // Send new account email
                                 wp_new_user_notification($new_user_id, null, 'both');
@@ -178,8 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terceiros_submit'])) 
 }
 
 // Ensure old POST values are saved if error
-function enfrute_post_val($key) {
-    return isset($_POST[$key]) ? esc_attr($_POST[$key]) : '';
+if (!function_exists('enfrute_post_val')) {
+    function enfrute_post_val($key) {
+        return isset($_POST[$key]) ? esc_attr(sanitize_text_field(wp_unslash($_POST[$key]))) : '';
+    }
 }
 ?>
 
@@ -308,52 +326,12 @@ function enfrute_post_val($key) {
                             <label for="coupon_code" class="form-label">Cupom de Desconto *</label>
                             <input type="text" class="form-control" id="coupon_code" name="coupon_code" required value="<?php echo enfrute_post_val('coupon_code'); ?>" placeholder="Digite o código do cupom">
                             <?php
-                            $args = array(
-                                'posts_per_page'   => -1,
-                                'post_type'        => 'shop_coupon',
-                                'post_status'      => 'publish',
-                                'orderby'          => 'title',
-                                'order'            => 'ASC',
-                            );
-                            $all_coupons = get_posts( $args );
                             $available_coupons = array();
-                            foreach ( $all_coupons as $c_post ) {
-                                $taxonomies = get_object_taxonomies('shop_coupon');
-                                $is_inscritor = false;
-                                foreach ($taxonomies as $tax) {
-                                    if (has_term('inscritor', $tax, $c_post->ID) || has_term('Inscritor', $tax, $c_post->ID)) {
-                                        $is_inscritor = true;
-                                        break;
-                                    }
-                                }
-                                
-                                // Fallback: check se está no título ou descrição
-                                if (!$is_inscritor && (stripos($c_post->post_excerpt, 'inscritor') !== false || stripos($c_post->post_title, 'inscritor') !== false)) {
-                                    $is_inscritor = true;
-                                }
-
-                                if ($is_inscritor) {
-                                    $coupon_obj = new WC_Coupon($c_post->ID);
-                                    
-                                    // Check expiração
-                                    $expiry_date = $coupon_obj->get_date_expires();
-                                    if ($expiry_date && $expiry_date->getTimestamp() < current_time('timestamp')) {
-                                        continue;
-                                    }
-                                    
-                                    // Check limite de uso
-                                    $usage_limit = $coupon_obj->get_usage_limit();
-                                    $usage_count = $coupon_obj->get_usage_count();
-                                    if ($usage_limit > 0 && $usage_count >= $usage_limit) {
-                                        continue;
-                                    }
-
-                                    $discount_type = $coupon_obj->get_discount_type();
-                                    $amount = $coupon_obj->get_amount();
-                                    $discount_text = ($discount_type == 'percent') ? floatval($amount) . '%' : 'R$ ' . number_format((float)$amount, 2, ',', '.');
-
-                                    $available_coupons[] = '<code style="cursor:pointer;" onclick="document.getElementById(\'coupon_code\').value=\'' . esc_js($coupon_obj->get_code()) . '\'">' . esc_html($coupon_obj->get_code()) . ' (-' . $discount_text . ')</code>';
-                                }
+                            foreach (enfrute_get_inscritor_coupons() as $coupon_obj) {
+                                $discount_type = $coupon_obj->get_discount_type();
+                                $amount = $coupon_obj->get_amount();
+                                $discount_text = ($discount_type == 'percent') ? floatval($amount) . '%' : 'R$ ' . number_format((float)$amount, 2, ',', '.');
+                                $available_coupons[] = '<code style="cursor:pointer;" onclick="document.getElementById(\'coupon_code\').value=\'' . esc_js($coupon_obj->get_code()) . '\'">' . esc_html($coupon_obj->get_code()) . ' (-' . esc_html($discount_text) . ')</code>';
                             }
 
                             if (!empty($available_coupons)) {
@@ -372,8 +350,7 @@ function enfrute_post_val($key) {
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<?php wp_print_scripts(array('jquery', 'jquery-mask')); ?>
 <script>
 jQuery(document).ready(function($){
     var maskBehavior = function (val) {

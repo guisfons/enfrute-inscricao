@@ -7,8 +7,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 if (!current_user_can('manage_sciflow')) {
-    wp_redirect(home_url());
+    wp_safe_redirect(home_url());
     exit;
 }
 
@@ -100,14 +104,12 @@ $semco_numbers = array_flip($all_semco);
             </div>
             <div class="d-flex gap-2 align-items-center">
                 <?php
-$submission_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-submission.php'));
-$submission_url = !empty($submission_page) ? get_permalink($submission_page[0]->ID) : home_url('/submissao');
+$submission_url = inscricao_enfrute_page_url('submission', '/submissao');
 
-$my_works_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-submissions-list.php'));
-$my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : home_url('/meus-trabalhos');
+$my_works_url = inscricao_enfrute_page_url('author_dashboard', '/meus-trabalhos');
 ?>
                 <a href="<?php echo esc_url($submission_url); ?>"
-                    class="btn btn-outline-success rounded-pill fw-bold btn-sm">
+                    class="btn btn-outline-primary rounded-pill fw-bold btn-sm">
                     <i class="bi bi-plus-circle me-1"></i> Submeter
                 </a>
                 <a href="<?php echo esc_url($my_works_url); ?>"
@@ -233,7 +235,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
         $author_id = get_the_author_meta('ID');
         $author_name = get_the_author();
         $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-        $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+        $event_name = inscricao_enfrute_event_label($event_slug);
 
         // SciFlow Specific Status
         $sciflow_status = get_post_meta($post_id, '_sciflow_status', true);
@@ -329,7 +331,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                             <td>
                                 <div class="d-flex align-items-center">
                                     <i
-                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-primary' : 'bi-journal-text sf-text-accent'; ?> me-2"></i>
                                     <span class="small fw-semibold">
                                         <?php echo esc_html($event_name); ?>
                                     </span>
@@ -342,8 +344,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                             </td>
                             <td class="pe-4 text-end">
                                 <?php
-        $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-        $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo'); // Fallback slug
+        $detail_url = inscricao_enfrute_page_url('article_detail', '/avaliar-artigo');
         $view_url = add_query_arg('article_id', $post_id, $detail_url);
 
         $attachment_id = get_post_meta($post_id, '_sciflow_attachment_id', true);
@@ -376,7 +377,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                         </div>
                         <h2 class="h3 fw-bold mb-3">Nenhum trabalho encontrado</h2>
                         <p class="text-muted mb-4 px-4 mx-auto" style="max-width: 400px;">
-                            Ainda não há trabalhos submetidos no sistema para os eventos Enfrute e Semco.
+                            <?php esc_html_e('Ainda não há trabalhos submetidos.', 'inscricao-enfrute'); ?>
                         </p>
                     </div>
                 <?php endif; ?>
@@ -421,7 +422,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                                     <?php while ($lecture_query->have_posts()): $lecture_query->the_post(); 
                                         $l_id = get_the_ID();
                                         $l_event = get_post_meta($l_id, '_sciflow_event', true);
-                                        $l_event_name = ($l_event === 'enfrute') ? 'Enfrute' : 'Semco';
+                                        $l_event_name = inscricao_enfrute_event_label($l_event);
                                         $l_duration = get_post_meta($l_id, '_sciflow_duration', true);
                                     ?>
                                         <tr>
@@ -443,7 +444,7 @@ $my_works_url = !empty($my_works_page) ? get_permalink($my_works_page[0]->ID) : 
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <i class="bi <?php echo ($l_event === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                                    <i class="bi <?php echo ($l_event === 'enfrute') ? 'bi-journal-bookmark text-primary' : 'bi-journal-text sf-text-accent'; ?> me-2"></i>
                                                     <span class="small fw-semibold"><?php echo esc_html($l_event_name); ?></span>
                                                 </div>
                                             </td>

@@ -1,19 +1,27 @@
 /*
-Theme Name: Inscricao Enfrute
+Theme Name: SciFlow Eventos
 Theme URI: https://github.com/guisfons/enfrute-inscricao
-Description: Tema personalizado para o evento Enfrute, focado em alta performance e design moderno inspirado no site oficial.
+Description: Tema de apresentação do SciFlow WP para eventos científicos (identidade visual configurável): inscrição (WooCommerce), submissão, painéis de autor, revisor e editor, pôsteres e certificados. Requer o plugin SciFlow WP.
 Author: Guilherme Silva Fonseca
-Version: 1.0.0
+Version: 1.1.0
+Requires at least: 6.0
+Tested up to: 7.1
+Requires PHP: 7.4
+License: MIT
+License URI: https://opensource.org/licenses/MIT
 Text Domain: inscricao-enfrute
+Domain Path: /languages
+Tags: custom-logo, custom-menu
 */
 
 :root {
-    --primary-green: #3CAC34;
-    --primary-dark: #333333;
-    --background-white: #FFFFFF;
-    --text-grey: #666666;
-    --font-heading: 'Montserrat', sans-serif;
-    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Legacy names kept as aliases of the brand tokens (SciFlow → Identidade visual). */
+    --primary-green: var(--brand-primary, #1f6f78);
+    --primary-dark: var(--brand-text, #1d2327);
+    --background-white: var(--brand-background, #ffffff);
+    --text-grey: var(--brand-muted, #6b7175);
+    --font-heading: var(--brand-heading-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif);
+    --font-body: var(--brand-body-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif);
 }
 
 body {

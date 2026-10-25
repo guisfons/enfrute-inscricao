@@ -4,6 +4,14 @@ Template Name: Submissão de Palestra
 Template Post Type: page
 */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 get_header(); ?>
 
 <main id="primary" class="site-main submission-page speaker-page">

@@ -5,6 +5,14 @@
  * This template displays the public gallery of approved posters.
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 get_header(); ?>
 
 <main id="primary" class="site-main">

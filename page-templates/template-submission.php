@@ -4,6 +4,14 @@ Template Name: Submissão de Artigo
 Template Post Type: page
 */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 // --- Access Control ---
 if (!is_user_logged_in()) {
     wp_redirect(wp_login_url(get_permalink()));

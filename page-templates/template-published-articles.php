@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 // Authorization check: User must be a Semco/Enfrute editor or revisor
 $current_user = wp_get_current_user();
 $user_roles = (array) $current_user->roles;
@@ -31,7 +35,7 @@ foreach ($allowed_roles as $role) {
 }
 
 if (!$has_access) {
-    wp_redirect(home_url());
+    wp_safe_redirect(home_url());
     exit;
 }
 
@@ -77,7 +81,7 @@ $query = new WP_Query($args);
             </div>
             <div class="d-flex gap-2">
                 <span class="badge bg-white text-dark border p-2 px-3 rounded-pill fw-bold">
-                    <i class="bi bi-file-earmark-check me-1 text-success"></i>
+                    <i class="bi bi-file-earmark-check me-1 text-primary"></i>
                     <?php echo esc_html($query->found_posts); ?> Artigos
                 </span>
             </div>
@@ -165,7 +169,7 @@ $query = new WP_Query($args);
                                 $query->the_post();
                                 $post_id = get_the_ID();
                                 $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-                                $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+                                $event_name = inscricao_enfrute_event_label($event_slug);
 
                                 $cultura = get_post_meta($post_id, '_sciflow_cultura', true);
                                 $area = get_post_meta($post_id, '_sciflow_knowledge_area', true);
@@ -212,12 +216,11 @@ $query = new WP_Query($args);
                                     </td>
                                     <td class="pe-4 text-end">
                                         <?php
-                                        $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-                                        $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo');
+                                        $detail_url = inscricao_enfrute_page_url('article_detail', '/avaliar-artigo');
                                         $view_url = add_query_arg('article_id', $post_id, $detail_url);
                                         ?>
                                         <a href="<?php echo esc_url($view_url); ?>"
-                                            class="btn btn-sm btn-outline-success rounded-pill px-4 fw-bold">
+                                            class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold">
                                             <i class="bi bi-eye me-1"></i> Visualizar
                                         </a>
                                     </td>

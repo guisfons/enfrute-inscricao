@@ -117,9 +117,9 @@ elseif ($product): ?>
                 <div class="pe-xl-5">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <span
-                            class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold text-uppercase fs-xs">Inscrições
+                            class="badge bg-primary text-white px-3 py-2 rounded-pill fw-bold text-uppercase fs-xs">Inscrições
                             Abertas</span>
-                        <span class="text-muted small fw-semibold"><i class="bi bi-shield-check text-success me-1"></i>
+                        <span class="text-muted small fw-semibold"><i class="bi bi-shield-check text-primary me-1"></i>
                             Ambiente Seguro</span>
                     </div>
 
@@ -134,20 +134,20 @@ elseif ($product): ?>
                     <div class="features-list mb-5">
                         <ul class="list-unstyled">
                             <li class="d-flex align-items-start mb-3">
-                                <div class="bg-success-subtle rounded-circle p-1 me-3 flex-shrink-0">
-                                    <i class="bi bi-check2 text-success"></i>
+                                <div class="bg-primary-subtle rounded-circle p-1 me-3 flex-shrink-0">
+                                    <i class="bi bi-check2 text-primary"></i>
                                 </div>
                                 <span class="text-dark">Acesso completo ao painel de submissão de trabalhos.</span>
                             </li>
                             <li class="d-flex align-items-start mb-3">
-                                <div class="bg-success-subtle rounded-circle p-1 me-3 flex-shrink-0">
-                                    <i class="bi bi-check2 text-success"></i>
+                                <div class="bg-primary-subtle rounded-circle p-1 me-3 flex-shrink-0">
+                                    <i class="bi bi-check2 text-primary"></i>
                                 </div>
                                 <span class="text-dark">Feedback técnico de revisores especializados.</span>
                             </li>
                             <li class="d-flex align-items-start">
-                                <div class="bg-success-subtle rounded-circle p-1 me-3 flex-shrink-0">
-                                    <i class="bi bi-check2 text-success"></i>
+                                <div class="bg-primary-subtle rounded-circle p-1 me-3 flex-shrink-0">
+                                    <i class="bi bi-check2 text-primary"></i>
                                 </div>
                                 <span class="text-dark">Participação garantida no evento selecionado.</span>
                             </li>
@@ -192,13 +192,13 @@ elseif ($product): ?>
                             </div>
                         <?php else: ?>
                             <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
-                                class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm transition-up">
+                                class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm transition-up">
                                 <i class="bi bi-cart-plus me-2"></i> Inscrever-se Agora
                             </a>
                         <?php endif; ?>
                         
                         <?php if (is_user_logged_in()): ?>
-                        <a href="<?php echo esc_url(home_url('/meus-artigos')); ?>"
+                        <a href="<?php echo esc_url(inscricao_enfrute_page_url('author_dashboard', '/meus-artigos')); ?>"
                             class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 fw-bold">
                             Meus Resumos
                         </a>
@@ -229,19 +229,19 @@ endif; ?>
         <div class="container py-4">
             <div class="row g-4 text-center">
                 <div class="col-md-4">
-                    <i class="bi bi-lightning-charge display-6 text-success mb-3"></i>
+                    <i class="bi bi-lightning-charge display-6 text-primary mb-3"></i>
                     <h3 class="h6 fw-bold text-dark">Submissão Rápida</h3>
                     <p class="text-muted small mb-0">Interface intuitiva para envio de seus trabalhos em poucos minutos.
                     </p>
                 </div>
                 <div class="col-md-4">
-                    <i class="bi bi-award display-6 text-success mb-3"></i>
+                    <i class="bi bi-award display-6 text-primary mb-3"></i>
                     <h3 class="h6 fw-bold text-dark">Certificados Oficiais</h3>
                     <p class="text-muted small mb-0">Receba certificados digitais válidos após a aprovação e
                         apresentação.</p>
                 </div>
                 <div class="col-md-4">
-                    <i class="bi bi-people display-6 text-success mb-3"></i>
+                    <i class="bi bi-people display-6 text-primary mb-3"></i>
                     <h3 class="h6 fw-bold text-dark">Networking</h3>
                     <p class="text-muted small mb-0">Conecte-se com pesquisadores e profissionais renomados da área.</p>
                 </div>
@@ -284,8 +284,8 @@ endif; ?>
         font-size: 0.75rem;
     }
 
-    .bg-success-subtle {
-        background-color: #e8f5e9 !important;
+    .bg-primary-subtle {
+        background-color: var(--brand-primary-light) !important;
     }
 </style>
 

@@ -8,8 +8,8 @@
     <div class="container">
         <div class="footer-info">
             <p>&copy;
-                <?php echo date('Y'); ?>
-                <?php bloginfo('name'); ?>. Todos os direitos reservados.
+                <?php echo esc_html(wp_date('Y')); ?>
+                <?php bloginfo('name'); ?>. <?php esc_html_e('Todos os direitos reservados.', 'inscricao-enfrute'); ?>
             </p>
         </div>
     </div>

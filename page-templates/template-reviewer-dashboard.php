@@ -7,8 +7,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (inscricao_enfrute_require('sciflow')) {
+    return;
+}
+
 if (!current_user_can('sciflow_review')) {
-    wp_redirect(home_url());
+    wp_safe_redirect(home_url());
     exit;
 }
 
@@ -167,7 +171,7 @@ $semco_numbers = array_flip($all_semco);
         $query->the_post();
         $post_id = get_the_ID();
         $event_slug = get_post_meta($post_id, '_sciflow_event', true);
-        $event_name = ($event_slug === 'enfrute') ? 'Enfrute' : 'Semco';
+        $event_name = inscricao_enfrute_event_label($event_slug);
 
         // SciFlow Specific Status
         $sciflow_status = get_post_meta($post_id, '_sciflow_status', true);
@@ -229,7 +233,7 @@ $semco_numbers = array_flip($all_semco);
                             <td>
                                 <div class="d-flex align-items-center">
                                     <i
-                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-success' : 'bi-journal-text text-primary'; ?> me-2"></i>
+                                        class="bi <?php echo ($event_slug === 'enfrute') ? 'bi-journal-bookmark text-primary' : 'bi-journal-text sf-text-accent'; ?> me-2"></i>
                                     <span class="small fw-semibold">
                                         <?php echo esc_html($event_name); ?>
                                     </span>
@@ -242,8 +246,7 @@ $semco_numbers = array_flip($all_semco);
                             </td>
                             <td class="pe-4 text-end">
                                 <?php
-        $detail_page = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-templates/template-article-detail.php'));
-        $detail_url = !empty($detail_page) ? get_permalink($detail_page[0]->ID) : home_url('/avaliar-artigo'); // Fallback slug
+        $detail_url = inscricao_enfrute_page_url('article_detail', '/avaliar-artigo');
         $view_url = add_query_arg('article_id', $post_id, $detail_url);
 ?>
                                 <a href="<?php echo esc_url($view_url); ?>"

@@ -1,0 +1,8 @@
+# Excluded from the distributable ZIP (git archive)
+/.gitattributes  export-ignore
+/.github         export-ignore
+/.gitignore      export-ignore
+/bin             export-ignore
+/docs            export-ignore
+/assets/scss     export-ignore
+/assets/css/main.css.map export-ignore
