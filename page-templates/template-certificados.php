@@ -11,12 +11,17 @@ if ( isset( $_POST['baixar_certificado_submit'] ) && isset( $_POST['certificado_
         if ( ! is_email( $input_email ) ) {
             $error_msg = 'Por favor, insira um e-mail válido.';
         } else {
-            $upload_dir = wp_upload_dir();
-            $certificados_dir = $upload_dir['basedir'] . '/certificados/';
-            $file_name = $input_email . '.pdf';
-            $file_path = $certificados_dir . $file_name;
+            if ( class_exists( 'SciFlow_Certificates' ) ) {
+                $file_path = SciFlow_Certificates::find_certificate_file( $input_email );
+            } else {
+                $upload_dir = wp_upload_dir();
+                $certificados_dir = trailingslashit( $upload_dir['basedir'] ) . 'certificados/';
+                $file_name = $input_email . '.pdf';
+                $candidate = $certificados_dir . $file_name;
+                $file_path = file_exists( $candidate ) ? $candidate : false;
+            }
             
-            if ( file_exists( $file_path ) ) {
+            if ( $file_path && file_exists( $file_path ) ) {
                 // Clear output buffers to prevent file corruption
                 while ( ob_get_level() ) {
                     ob_end_clean();

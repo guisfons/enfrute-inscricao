@@ -71,6 +71,7 @@ if ($query->have_posts()) {
 
 <main class="sciflow-submissions-list py-5">
     <div class="container">
+        <!--<?php echo do_shortcode('[baixar_certificado]'); ?>-->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h2 mb-0">
                 <?php esc_html_e('Meus Resumos', 'enfrute'); ?>
