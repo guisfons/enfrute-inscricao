@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 — 2026-10-30
+### Novidades
+- Página inicial: aviso "Certificados disponíveis" com o botão para emitir na área do participante (Minha conta → Certificados). Logada, a pessoa vê quantos certificados tem; o aviso só aparece quando há certificados publicados. Requer o SciFlow WP 1.2.2 ou superior; com versões anteriores o aviso não aparece.
+
+
 ## 1.1.1 — 2026-10-25
 ### Correções
 - build: checksum com nome do arquivo sem caminho

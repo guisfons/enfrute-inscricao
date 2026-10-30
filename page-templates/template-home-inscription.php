@@ -68,6 +68,35 @@ if ($inscricao_required): ?>
 endif; ?>
 
         <?php
+// Certificates are issued in the participant area ("Minha conta" → Certificados).
+$certificates = inscricao_enfrute_certificates_status();
+if ($certificates['available']): ?>
+        <div class="home-certificates d-flex flex-column flex-md-row align-items-md-center gap-3 gap-md-4 mb-5 p-4 rounded-4">
+            <div class="home-certificates-icon flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle">
+                <i class="bi bi-award fs-3" aria-hidden="true"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h2 class="h5 fw-bold text-dark mb-1">
+                    <?php if ($certificates['count']): ?>
+                    <?php echo esc_html(sprintf(_n('Você tem %d certificado disponível', 'Você tem %d certificados disponíveis', $certificates['count'], 'inscricao-enfrute'), $certificates['count'])); ?>
+                    <?php else: ?>
+                    <?php esc_html_e('Certificados disponíveis', 'inscricao-enfrute'); ?>
+                    <?php endif; ?>
+                </h2>
+                <p class="text-muted mb-0">
+                    <?php esc_html_e('Emita seus certificados na área do participante (Minha conta → Certificados).', 'inscricao-enfrute'); ?>
+                </p>
+            </div>
+            <a href="<?php echo esc_url($certificates['url']); ?>"
+                class="btn btn-primary btn-lg rounded-pill px-4 fw-bold flex-shrink-0">
+                <i class="bi bi-download me-2" aria-hidden="true"></i>
+                <?php echo is_user_logged_in() ? esc_html__('Emitir certificados', 'inscricao-enfrute') : esc_html__('Entrar e emitir', 'inscricao-enfrute'); ?>
+            </a>
+        </div>
+        <?php
+endif; ?>
+
+        <?php
 // If user has a pending on-hold order, show status panel instead of purchase CTA
 if ($user_on_hold): ?>
         <div class="text-center py-5">
@@ -286,6 +315,18 @@ endif; ?>
 
     .bg-primary-subtle {
         background-color: var(--brand-primary-light) !important;
+    }
+
+    .home-certificates {
+        background: var(--brand-primary-light, #eef6f0);
+        border: 1px solid rgba(var(--brand-primary-rgb, 13, 110, 67), 0.2);
+    }
+
+    .home-certificates-icon {
+        width: 56px;
+        height: 56px;
+        background: #fff;
+        color: var(--brand-primary, #0d6e43);
     }
 </style>
 

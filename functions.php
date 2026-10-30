@@ -4,7 +4,7 @@
  */
 
 if (!defined('INSCRICAO_ENFRUTE_VERSION')) {
-    define('INSCRICAO_ENFRUTE_VERSION', '1.1.1');
+    define('INSCRICAO_ENFRUTE_VERSION', '1.2.0');
 }
 
 require_once get_template_directory() . '/inc/sciflow-integration.php';
