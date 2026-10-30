@@ -123,3 +123,44 @@ function inscricao_enfrute_event_label($slug)
     }
     return ucfirst((string) $slug);
 }
+
+/**
+ * Certificates published by SciFlow, for the home page call-to-action.
+ *
+ * @return array{available: bool, count: int, url: string} count is the
+ *         logged-in user's certificates (0 for visitors).
+ */
+function inscricao_enfrute_certificates_status()
+{
+    $status = array('available' => false, 'count' => 0, 'url' => '');
+    if (!class_exists('SciFlow_Certificates') || !method_exists('SciFlow_Certificates', 'account_url')) {
+        return $status;
+    }
+    $status['url'] = SciFlow_Certificates::account_url();
+    if ('' === $status['url']) {
+        return $status;
+    }
+
+    if (is_user_logged_in()) {
+        $status['count'] = count(SciFlow_Certificates::find_certificates(SciFlow_Certificates::current_user_emails()));
+        $status['available'] = $status['count'] > 0;
+        return $status;
+    }
+
+    // Visitors: whether any certificate was uploaded (cached; the folder holds ~1000 files).
+    $cached = get_transient('inscricao_enfrute_certificates_available');
+    if (false === $cached) {
+        $cached = 'no';
+        $base = SciFlow_Certificates::base_dir();
+        foreach (array_keys(SciFlow_Certificates::types()) as $type) {
+            $dir = SciFlow_Certificates::ROOT_TYPE === $type ? $base : $base . $type . '/';
+            if (preg_grep('/\.pdf$/i', scandir($dir) ?: array())) {
+                $cached = 'yes';
+                break;
+            }
+        }
+        set_transient('inscricao_enfrute_certificates_available', $cached, HOUR_IN_SECONDS);
+    }
+    $status['available'] = 'yes' === $cached;
+    return $status;
+}
